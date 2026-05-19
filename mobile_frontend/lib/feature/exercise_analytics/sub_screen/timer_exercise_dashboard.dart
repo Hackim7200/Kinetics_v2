@@ -1,37 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
-import 'package:mobile_frontend/database/database.dart' show AppDatabase;
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
-import 'package:mobile_frontend/feature/workout/data/session_sets_service.dart';
-import 'package:mobile_frontend/feature/workout/models/workout_log.dart';
-import 'package:mobile_frontend/feature/workout/widgets/progress_graph.dart';
-import 'package:mobile_frontend/feature/workout/widgets/small_stat_card.dart';
-import 'package:mobile_frontend/feature/workout/widgets/technique_notes_card.dart';
-import 'package:mobile_frontend/feature/workout/widgets/timer_add_timed_set_sheet.dart';
-import 'package:mobile_frontend/feature/workout/widgets/timer_session_log_table.dart';
-import 'package:mobile_frontend/feature/workout/widgets/workout_detail_timer_history_table.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/session_sets_service.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/progress_graph.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/small_stat_card.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/technique_notes_card.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/timer_add_timed_set_sheet.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/timer_session_log_table.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/workout_detail_timer_history_table.dart';
 
 /// Timer session: log each set via bottom-sheet stopwatch; table shows **SET** + **DURATION** (`mm:ss`).
 /// Matches [WeightExerciseDashboard] layout (notes, table, progress graph, stats, history).
-class TimerExerciseDashboard extends StatefulWidget {
+class TimerExerciseDashboard extends ConsumerStatefulWidget {
   final Exercise exercise;
 
   /// Bumps [TechniqueNotesCard] key so saved notes refetch from Drift.
   final int techniqueNotesRefreshToken;
-  final AppDatabase db;
 
   const TimerExerciseDashboard({
     super.key,
-    required this.db,
     required this.exercise,
     this.techniqueNotesRefreshToken = 0,
   });
 
   @override
-  State<TimerExerciseDashboard> createState() => _TimerExerciseDashboardState();
+  ConsumerState<TimerExerciseDashboard> createState() =>
+      _TimerExerciseDashboardState();
 }
 
-class _TimerExerciseDashboardState extends State<TimerExerciseDashboard> {
+class _TimerExerciseDashboardState
+    extends ConsumerState<TimerExerciseDashboard> {
   late List<SetEntry> _sets;
   bool _workoutFinished = false;
   bool _sessionReady = true;
@@ -41,8 +42,7 @@ class _TimerExerciseDashboardState extends State<TimerExerciseDashboard> {
   List<String> _graphXLabels = [];
   List<WorkoutLog> _historySessions = [];
   int? _maxHoldSecondsLast30Days;
-  late final SessionSetsService _sessionSetsService =
-      SessionSetsService(widget.db);
+  late final SessionSetsService _sessionSetsService;
 
   int get _maxSets {
     final n = widget.exercise.sets;
@@ -112,6 +112,7 @@ class _TimerExerciseDashboardState extends State<TimerExerciseDashboard> {
   @override
   void initState() {
     super.initState();
+    _sessionSetsService = SessionSetsService(ref.read(appDatabaseProvider));
     _sets = [const SetEntry(setNumber: 1)];
     final linkId = widget.exercise.routineExerciseId;
     if (linkId != null) {
@@ -291,7 +292,6 @@ class _TimerExerciseDashboardState extends State<TimerExerciseDashboard> {
       children: [
         TechniqueNotesCard(
           key: ValueKey(widget.techniqueNotesRefreshToken),
-          db: widget.db,
           exerciseId: widget.exercise.id,
         ),
         const SizedBox(height: 16),

@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:mobile_frontend/database/database.dart' as drift;
-import 'package:mobile_frontend/feature/workout/data/workout_log_stats.dart';
-import 'package:mobile_frontend/feature/workout/models/workout_log.dart' as session;
+import 'package:mobile_frontend/feature/exercise_analytics/data/workout_log_stats.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart' as session;
 import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();

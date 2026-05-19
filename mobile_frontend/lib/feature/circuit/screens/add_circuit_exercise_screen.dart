@@ -1,30 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
-import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.dart';
 
-class AddCircuitExerciseScreen extends StatefulWidget {
-  final AppDatabase db;
+class AddCircuitExerciseScreen extends ConsumerStatefulWidget {
   final String circuitId;
   final String? circuitName;
 
   const AddCircuitExerciseScreen({
     super.key,
-    required this.db,
     required this.circuitId,
     this.circuitName,
   });
 
   @override
-  State<AddCircuitExerciseScreen> createState() =>
+  ConsumerState<AddCircuitExerciseScreen> createState() =>
       _AddCircuitExerciseScreenState();
 }
 
-class _AddCircuitExerciseScreenState extends State<AddCircuitExerciseScreen> {
+class _AddCircuitExerciseScreenState
+    extends ConsumerState<AddCircuitExerciseScreen> {
   final _nameController = TextEditingController();
-  late final CircuitExerciseService _linkService =
-      CircuitExerciseService(widget.db);
+  late final CircuitExerciseService _linkService;
+
+  @override
+  void initState() {
+    super.initState();
+    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
+  }
   bool _saving = false;
 
   @override

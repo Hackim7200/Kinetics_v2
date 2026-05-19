@@ -1,27 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_service.dart';
 
-class CreateCircuitScreen extends StatefulWidget {
-  const CreateCircuitScreen({super.key, required this.db});
-
-  final AppDatabase db;
+class CreateCircuitScreen extends ConsumerStatefulWidget {
+  const CreateCircuitScreen({super.key});
 
   @override
-  State<CreateCircuitScreen> createState() => _CreateCircuitScreenState();
+  ConsumerState<CreateCircuitScreen> createState() =>
+      _CreateCircuitScreenState();
 }
 
-class _CreateCircuitScreenState extends State<CreateCircuitScreen> {
+class _CreateCircuitScreenState extends ConsumerState<CreateCircuitScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _roundsController = TextEditingController();
   final _stationSecondsController = TextEditingController();
   final _preStartCountdownController = TextEditingController(text: '10');
   final _restBetweenRoundsController = TextEditingController(text: '30');
-  late final CircuitService _service = CircuitService(widget.db);
+  late final CircuitService _service;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = CircuitService(ref.read(appDatabaseProvider));
+  }
   bool _saving = false;
   /// false = follow list order; true = shuffle stations once when Play starts.
   bool _randomizeStationOrder = false;

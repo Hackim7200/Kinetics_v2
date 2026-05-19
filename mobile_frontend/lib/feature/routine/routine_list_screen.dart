@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/empty_state_widget.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/exercise_list_screen.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_service.dart';
@@ -10,20 +12,24 @@ import 'package:mobile_frontend/feature/routine/screens/create_routine_screen.da
 import 'package:mobile_frontend/feature/routine/widgets/create_routine_card.dart';
 import 'package:mobile_frontend/feature/routine/widgets/routine_card.dart';
 
-class RoutineListScreen extends StatefulWidget {
-  const RoutineListScreen({super.key, required this.db});
-
-  final AppDatabase db;
+class RoutineListScreen extends ConsumerStatefulWidget {
+  const RoutineListScreen({super.key});
 
   @override
-  State<RoutineListScreen> createState() => _RoutineListScreenState();
+  ConsumerState<RoutineListScreen> createState() => _RoutineListScreenState();
 }
 
-class _RoutineListScreenState extends State<RoutineListScreen> {
-  late final RoutineService _service = RoutineService(widget.db);
-  late final RoutineExerciseService _linkService = RoutineExerciseService(
-    widget.db,
-  );
+class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
+  late final RoutineService _service;
+  late final RoutineExerciseService _linkService;
+
+  @override
+  void initState() {
+    super.initState();
+    final db = ref.read(appDatabaseProvider);
+    _service = RoutineService(db);
+    _linkService = RoutineExerciseService(db);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +64,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
               actionLabel: 'Create routine',
               onAction: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => CreateRoutineScreen(db: widget.db),
+                  builder: (_) => const CreateRoutineScreen(),
                 ),
               ),
             );
@@ -119,7 +125,6 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                             onTap: () => Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => ExerciseListScreen(
-                                  db: widget.db,
                                   routine: routine,
                                 ),
                               ),
@@ -130,7 +135,7 @@ class _RoutineListScreenState extends State<RoutineListScreen> {
                       CreateRoutineCard(
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => CreateRoutineScreen(db: widget.db),
+                            builder: (_) => const CreateRoutineScreen(),
                           ),
                         ),
                       ),

@@ -1,38 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.dart';
 
-class EditCircuitExerciseScreen extends StatefulWidget {
-  final AppDatabase db;
+class EditCircuitExerciseScreen extends ConsumerStatefulWidget {
   final CircuitExercise link;
   final Exercise exercise;
   final String? circuitName;
 
   const EditCircuitExerciseScreen({
     super.key,
-    required this.db,
     required this.link,
     required this.exercise,
     this.circuitName,
   });
 
   @override
-  State<EditCircuitExerciseScreen> createState() =>
+  ConsumerState<EditCircuitExerciseScreen> createState() =>
       _EditCircuitExerciseScreenState();
 }
 
-class _EditCircuitExerciseScreenState extends State<EditCircuitExerciseScreen> {
+class _EditCircuitExerciseScreenState
+    extends ConsumerState<EditCircuitExerciseScreen> {
   late final TextEditingController _nameController;
-  late final CircuitExerciseService _linkService =
-      CircuitExerciseService(widget.db);
+  late final CircuitExerciseService _linkService;
   bool _saving = false;
   bool _deleting = false;
 
   @override
   void initState() {
     super.initState();
+    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
     _nameController = TextEditingController(text: widget.exercise.name);
   }
 

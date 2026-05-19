@@ -2,15 +2,17 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/app/navigation/app_router.dart';
 import 'package:mobile_frontend/app/themes/app_theme.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/auth/data/onboarding_pref.dart';
 import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsFlutterBinding.ensureInitialized(); 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -18,12 +20,14 @@ Future<void> main() async {
 
   final onboardingComplete = await OnboardingPrefs.isComplete();
   final db = await _initDatabase();
-  final router = createAppRouter(
-    db: db,
-    onboardingComplete: onboardingComplete,
-  );
+  final router = createAppRouter(onboardingComplete: onboardingComplete);
 
-  runApp(MyApp(router: router));
+  runApp(
+    ProviderScope(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+      child: MyApp(router: router),
+    ),
+  );
 }
 
 Future<AppDatabase> _initDatabase() async {

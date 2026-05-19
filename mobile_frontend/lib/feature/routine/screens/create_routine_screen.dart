@@ -1,23 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_service.dart';
 
-class CreateRoutineScreen extends StatefulWidget {
-  const CreateRoutineScreen({super.key, required this.db});
-
-  final AppDatabase db;
+class CreateRoutineScreen extends ConsumerStatefulWidget {
+  const CreateRoutineScreen({super.key});
 
   @override
-  State<CreateRoutineScreen> createState() => _CreateRoutineScreenState();
+  ConsumerState<CreateRoutineScreen> createState() =>
+      _CreateRoutineScreenState();
 }
 
-class _CreateRoutineScreenState extends State<CreateRoutineScreen> {
+class _CreateRoutineScreenState extends ConsumerState<CreateRoutineScreen> {
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  late final RoutineService _service = RoutineService(widget.db);
+  late final RoutineService _service;
   bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = RoutineService(ref.read(appDatabaseProvider));
+  }
 
   @override
   void dispose() {

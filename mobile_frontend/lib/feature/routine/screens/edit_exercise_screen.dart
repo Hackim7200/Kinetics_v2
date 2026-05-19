@@ -1,36 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 
-class EditExerciseScreen extends StatefulWidget {
-  final AppDatabase db;
+class EditExerciseScreen extends ConsumerStatefulWidget {
   final RoutineExercise link;
   final Exercise exercise;
   final String? routineName;
 
   const EditExerciseScreen({
     super.key,
-    required this.db,
     required this.link,
     required this.exercise,
     this.routineName,
   });
 
   @override
-  State<EditExerciseScreen> createState() => _EditExerciseScreenState();
+  ConsumerState<EditExerciseScreen> createState() =>
+      _EditExerciseScreenState();
 }
 
-class _EditExerciseScreenState extends State<EditExerciseScreen> {
+class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _setsController;
   late final TextEditingController _repsController;
-  late final RoutineExerciseService _linkService =
-      RoutineExerciseService(widget.db);
+  late final RoutineExerciseService _linkService;
   late String _type;
   late String _timerTarget;
   bool _saving = false;
@@ -39,6 +39,7 @@ class _EditExerciseScreenState extends State<EditExerciseScreen> {
   @override
   void initState() {
     super.initState();
+    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
     final ex = widget.exercise;
     final link = widget.link;
     _nameController = TextEditingController(text: ex.name);

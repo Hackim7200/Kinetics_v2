@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/empty_state_widget.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/circuit_detail_screen.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_service.dart';
@@ -10,24 +12,30 @@ import 'package:mobile_frontend/feature/circuit/screens/create_circuit_screen.da
 import 'package:mobile_frontend/feature/circuit/widgets/circuit_list_card.dart';
 import 'package:mobile_frontend/feature/circuit/widgets/create_circuit_card.dart';
 
-class CircuitDashboardScreen extends StatefulWidget {
-  const CircuitDashboardScreen({super.key, required this.db});
-
-  final AppDatabase db;
+class CircuitDashboardScreen extends ConsumerStatefulWidget {
+  const CircuitDashboardScreen({super.key});
 
   @override
-  State<CircuitDashboardScreen> createState() => _CircuitDashboardScreenState();
+  ConsumerState<CircuitDashboardScreen> createState() =>
+      _CircuitDashboardScreenState();
 }
 
-class _CircuitDashboardScreenState extends State<CircuitDashboardScreen> {
-  late final CircuitService _service = CircuitService(widget.db);
-  late final CircuitExerciseService _linkService =
-      CircuitExerciseService(widget.db);
+class _CircuitDashboardScreenState extends ConsumerState<CircuitDashboardScreen> {
+  late final CircuitService _service;
+  late final CircuitExerciseService _linkService;
+
+  @override
+  void initState() {
+    super.initState();
+    final db = ref.read(appDatabaseProvider);
+    _service = CircuitService(db);
+    _linkService = CircuitExerciseService(db);
+  }
 
   void _openCreate() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => CreateCircuitScreen(db: widget.db),
+        builder: (_) => const CreateCircuitScreen(),
       ),
     );
   }
@@ -125,7 +133,6 @@ class _CircuitDashboardScreenState extends State<CircuitDashboardScreen> {
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute<void>(
                             builder: (_) => CircuitDetailScreen(
-                              db: widget.db,
                               circuit: circuit,
                             ),
                           ),

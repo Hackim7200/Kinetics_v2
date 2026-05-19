@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/app/navigation/app_shell.dart';
-import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/app/navigation/app_shell_2.dart';
 import 'package:mobile_frontend/feature/auth/screens/onboarding_screen.dart';
 import 'package:mobile_frontend/feature/auth/screens/sign_in_screen.dart';
 
@@ -12,10 +12,7 @@ import 'package:mobile_frontend/feature/auth/screens/sign_in_screen.dart';
 /// main shell reachable without credentials; gate only sync-sensitive flows
 /// or APIs, not `/home` itself.
 ///
-GoRouter createAppRouter({
-  required bool onboardingComplete,
-  required AppDatabase db,
-}) {
+GoRouter createAppRouter({required bool onboardingComplete}) {
   return GoRouter(
     initialLocation: onboardingComplete ? '/home' : '/',
     routes: <RouteBase>[
@@ -36,7 +33,7 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/home',
         builder: (BuildContext context, GoRouterState state) {
-          return AppShell(db: db);
+          return const AppShell2();
         },
       ),
     ],

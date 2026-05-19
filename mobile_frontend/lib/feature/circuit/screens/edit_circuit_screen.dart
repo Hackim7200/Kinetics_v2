@@ -1,36 +1,32 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_service.dart';
 
-class EditCircuitScreen extends StatefulWidget {
-  final AppDatabase db;
+class EditCircuitScreen extends ConsumerStatefulWidget {
   final Circuit circuit;
 
-  const EditCircuitScreen({
-    super.key,
-    required this.db,
-    required this.circuit,
-  });
+  const EditCircuitScreen({super.key, required this.circuit});
 
   @override
-  State<EditCircuitScreen> createState() => _EditCircuitScreenState();
+  ConsumerState<EditCircuitScreen> createState() => _EditCircuitScreenState();
 }
 
-class _EditCircuitScreenState extends State<EditCircuitScreen> {
+class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final TextEditingController _roundsController;
   late final TextEditingController _durationController;
   late final TextEditingController _preStartCountdownController;
   late final TextEditingController _restBetweenRoundsController;
-  late final CircuitService _service = CircuitService(widget.db);
-  late final CircuitExerciseService _linkService =
-      CircuitExerciseService(widget.db);
+  late final CircuitService _service;
+  late final CircuitExerciseService _linkService;
   bool _saving = false;
   bool _deleting = false;
   late bool _randomizeStationOrder;
@@ -38,6 +34,9 @@ class _EditCircuitScreenState extends State<EditCircuitScreen> {
   @override
   void initState() {
     super.initState();
+    final db = ref.read(appDatabaseProvider);
+    _service = CircuitService(db);
+    _linkService = CircuitExerciseService(db);
     final c = widget.circuit;
     _nameController = TextEditingController(text: c.name);
     _descriptionController = TextEditingController(text: c.description ?? '');

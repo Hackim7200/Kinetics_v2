@@ -1,14 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_frontend/database/database.dart';
 import 'package:mobile_frontend/feature/circuit/circuit_dashboard_screen.dart';
 import 'package:mobile_frontend/feature/routine/routine_list_screen.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.db});
-
-  final AppDatabase db;
+  const AppShell({super.key});
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -17,9 +14,9 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
 
-  late final List<Widget> _screens = [
-    RoutineListScreen(db: widget.db),
-    CircuitDashboardScreen(db: widget.db),
+  late final List<Widget> _screens = const [
+    RoutineListScreen(),
+    CircuitDashboardScreen(),
   ];
 
   @override

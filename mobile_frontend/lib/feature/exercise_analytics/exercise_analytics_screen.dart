@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart' as drift;
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise_ui_mapper.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 import 'package:mobile_frontend/feature/routine/screens/edit_exercise_screen.dart';
-import 'package:mobile_frontend/feature/workout/sub_screen/timer_exercise_dashboard.dart';
-import 'package:mobile_frontend/feature/workout/sub_screen/weight_exercise_dashboard.dart';
-import 'package:mobile_frontend/feature/workout/widgets/technique_notes_editor.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/sub_screen/timer_exercise_dashboard.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/sub_screen/weight_exercise_dashboard.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/technique_notes_editor.dart';
 
-class ExerciseAnalyticsScreen extends StatefulWidget {
-  final drift.AppDatabase db;
+class ExerciseAnalyticsScreen extends ConsumerStatefulWidget {
   final Exercise exercise;
 
   /// Routine link when opened from a routine (enables edit/delete on workout page).
@@ -24,7 +25,6 @@ class ExerciseAnalyticsScreen extends StatefulWidget {
 
   const ExerciseAnalyticsScreen({
     super.key,
-    required this.db,
     required this.exercise,
     this.routineLink,
     this.storedExercise,
@@ -33,14 +33,13 @@ class ExerciseAnalyticsScreen extends StatefulWidget {
   });
 
   @override
-  State<ExerciseAnalyticsScreen> createState() =>
+  ConsumerState<ExerciseAnalyticsScreen> createState() =>
       _ExerciseAnalyticsScreenState();
 }
 
-class _ExerciseAnalyticsScreenState extends State<ExerciseAnalyticsScreen> {
-  late final RoutineExerciseService _linkService = RoutineExerciseService(
-    widget.db,
-  );
+class _ExerciseAnalyticsScreenState
+    extends ConsumerState<ExerciseAnalyticsScreen> {
+  late final RoutineExerciseService _linkService;
   late Exercise _exercise;
   int _techniqueNotesRefreshToken = 0;
 
@@ -50,11 +49,12 @@ class _ExerciseAnalyticsScreenState extends State<ExerciseAnalyticsScreen> {
   @override
   void initState() {
     super.initState();
+    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
     _exercise = widget.exercise;
   }
 
   Future<void> _onTechniqueNotesPressed() async {
-    final ok = await showTechniqueNotesEditor(context, widget.db, _exercise.id);
+    final ok = await showTechniqueNotesEditor(context, _exercise.id);
     if (ok && mounted) {
       setState(() => _techniqueNotesRefreshToken++);
     }
@@ -88,7 +88,6 @@ class _ExerciseAnalyticsScreenState extends State<ExerciseAnalyticsScreen> {
     final result = await Navigator.of(context).push<String>(
       MaterialPageRoute<String>(
         builder: (_) => EditExerciseScreen(
-          db: widget.db,
           link: widget.routineLink!,
           exercise: widget.storedExercise!,
           routineName: widget.routineName,
@@ -168,13 +167,11 @@ class _ExerciseAnalyticsScreenState extends State<ExerciseAnalyticsScreen> {
           const SizedBox(height: 32),
           if (exercise.isStrength)
             WeightExerciseDashboard(
-              db: widget.db,
               exercise: exercise,
               techniqueNotesRefreshToken: _techniqueNotesRefreshToken,
             )
           else
             TimerExerciseDashboard(
-              db: widget.db,
               exercise: exercise,
               techniqueNotesRefreshToken: _techniqueNotesRefreshToken,
             ),

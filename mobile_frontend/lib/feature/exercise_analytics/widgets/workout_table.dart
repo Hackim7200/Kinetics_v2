@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
-import 'package:mobile_frontend/feature/workout/models/workout_log.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart';
 
 const double _setColWidth = 48;
 

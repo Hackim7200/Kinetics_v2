@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/database/database.dart';
-import 'package:mobile_frontend/feature/workout/data/exercise_techniques_service.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/exercise_techniques_service.dart';
 
 Future<String> _initialNotesText(AppDatabase db, String exerciseId) async {
   return ExerciseTechniquesService(db).techniquesForEditor(exerciseId);
@@ -76,9 +78,9 @@ class _TechniqueNotesEditorDialogState extends State<_TechniqueNotesEditorDialog
 /// Opens a dialog to add or edit exercise technique notes; returns whether Drift was updated.
 Future<bool> showTechniqueNotesEditor(
   BuildContext context,
-  AppDatabase db,
   String exerciseId,
 ) async {
+  final db = ProviderScope.containerOf(context).read(appDatabaseProvider);
   final initial = await _initialNotesText(db, exerciseId);
 
   if (!context.mounted) return false;

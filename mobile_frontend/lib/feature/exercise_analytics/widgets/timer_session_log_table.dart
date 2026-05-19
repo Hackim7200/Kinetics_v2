@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_frontend/feature/workout/models/workout_log.dart';
-import 'package:mobile_frontend/feature/workout/widgets/timer_add_timed_set_sheet.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/timer_add_timed_set_sheet.dart';
 
 const double _timerSetColWidth = 48;
 

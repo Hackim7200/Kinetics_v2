@@ -1,35 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
-import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 
 /// Full-screen form to add an exercise to a routine (matches [CreateRoutineScreen] layout).
-class AddExerciseScreen extends StatefulWidget {
-  final AppDatabase db;
+class AddExerciseScreen extends ConsumerStatefulWidget {
   final String routineId;
   final String? routineName;
 
   const AddExerciseScreen({
     super.key,
-    required this.db,
     required this.routineId,
     this.routineName,
   });
 
   @override
-  State<AddExerciseScreen> createState() => _AddExerciseScreenState();
+  ConsumerState<AddExerciseScreen> createState() => _AddExerciseScreenState();
 }
 
-class _AddExerciseScreenState extends State<AddExerciseScreen> {
+class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
   final _nameController = TextEditingController();
   final _setsController = TextEditingController();
   final _repsController = TextEditingController();
-  late final RoutineExerciseService _linkService =
-      RoutineExerciseService(widget.db);
+  late final RoutineExerciseService _linkService;
+
+  @override
+  void initState() {
+    super.initState();
+    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
+  }
   String _type = 'strength';
   String _timerTarget = TimerRoutineTarget.increase;
   bool _saving = false;

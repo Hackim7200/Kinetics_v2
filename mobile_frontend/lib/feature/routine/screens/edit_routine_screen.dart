@@ -1,37 +1,36 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_service.dart';
 
-class EditRoutineScreen extends StatefulWidget {
-  final AppDatabase db;
+class EditRoutineScreen extends ConsumerStatefulWidget {
   final Routine routine;
 
-  const EditRoutineScreen({
-    super.key,
-    required this.db,
-    required this.routine,
-  });
+  const EditRoutineScreen({super.key, required this.routine});
 
   @override
-  State<EditRoutineScreen> createState() => _EditRoutineScreenState();
+  ConsumerState<EditRoutineScreen> createState() => _EditRoutineScreenState();
 }
 
-class _EditRoutineScreenState extends State<EditRoutineScreen> {
+class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  late final RoutineService _service = RoutineService(widget.db);
-  late final RoutineExerciseService _linkService =
-      RoutineExerciseService(widget.db);
+  late final RoutineService _service;
+  late final RoutineExerciseService _linkService;
   bool _saving = false;
   bool _deleting = false;
 
   @override
   void initState() {
     super.initState();
+    final db = ref.read(appDatabaseProvider);
+    _service = RoutineService(db);
+    _linkService = RoutineExerciseService(db);
     final r = widget.routine;
     _nameController = TextEditingController(text: r.name);
     _descriptionController = TextEditingController(text: r.description ?? '');

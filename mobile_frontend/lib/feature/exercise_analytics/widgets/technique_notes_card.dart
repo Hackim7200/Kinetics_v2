@@ -1,30 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_frontend/database/database.dart';
-import 'package:mobile_frontend/feature/workout/data/exercise_techniques_service.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/exercise_techniques_service.dart';
 
 /// Shows saved technique notes from Drift when non-empty.
-class TechniqueNotesCard extends StatefulWidget {
-  final AppDatabase db;
+class TechniqueNotesCard extends ConsumerStatefulWidget {
   final String exerciseId;
 
-  const TechniqueNotesCard({
-    super.key,
-    required this.db,
-    required this.exerciseId,
-  });
+  const TechniqueNotesCard({super.key, required this.exerciseId});
 
   @override
-  State<TechniqueNotesCard> createState() => _TechniqueNotesCardState();
+  ConsumerState<TechniqueNotesCard> createState() =>
+      _TechniqueNotesCardState();
 }
 
-class _TechniqueNotesCardState extends State<TechniqueNotesCard> {
+class _TechniqueNotesCardState extends ConsumerState<TechniqueNotesCard> {
   late final Future<String?> _notesFuture;
 
   @override
   void initState() {
     super.initState();
-    _notesFuture = ExerciseTechniquesService(widget.db)
+    _notesFuture = ExerciseTechniquesService(ref.read(appDatabaseProvider))
         .storedTechniquesTrimmed(widget.exerciseId);
   }
 

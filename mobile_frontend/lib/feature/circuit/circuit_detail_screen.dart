@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.dart';
 import 'package:mobile_frontend/feature/circuit/screens/add_circuit_exercise_screen.dart';
 import 'package:mobile_frontend/feature/circuit/screens/circuit_play_screen.dart';
@@ -14,35 +16,31 @@ String _stationSubtitle(int? stationSeconds) {
   return '$w SEC';
 }
 
-class CircuitDetailScreen extends StatefulWidget {
-  final AppDatabase db;
+class CircuitDetailScreen extends ConsumerStatefulWidget {
   final Circuit circuit;
 
-  const CircuitDetailScreen({
-    super.key,
-    required this.db,
-    required this.circuit,
-  });
+  const CircuitDetailScreen({super.key, required this.circuit});
 
   @override
-  State<CircuitDetailScreen> createState() => _CircuitDetailScreenState();
+  ConsumerState<CircuitDetailScreen> createState() =>
+      _CircuitDetailScreenState();
 }
 
-class _CircuitDetailScreenState extends State<CircuitDetailScreen> {
+class _CircuitDetailScreenState extends ConsumerState<CircuitDetailScreen> {
   late Circuit _circuit;
-  late final CircuitExerciseService _linkService =
-      CircuitExerciseService(widget.db);
+  late final CircuitExerciseService _linkService;
 
   @override
   void initState() {
     super.initState();
     _circuit = widget.circuit;
+    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
   }
 
   Future<void> _openEdit() async {
     final updated = await Navigator.of(context).push<Circuit>(
       MaterialPageRoute(
-        builder: (_) => EditCircuitScreen(db: widget.db, circuit: _circuit),
+        builder: (_) => EditCircuitScreen(circuit: _circuit),
       ),
     );
     if (updated != null && mounted) setState(() => _circuit = updated);
@@ -52,7 +50,6 @@ class _CircuitDetailScreenState extends State<CircuitDetailScreen> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => AddCircuitExerciseScreen(
-          db: widget.db,
           circuitId: _circuit.id,
           circuitName: _circuit.name,
         ),
@@ -63,7 +60,7 @@ class _CircuitDetailScreenState extends State<CircuitDetailScreen> {
   void _openPlay() {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => CircuitPlayScreen(db: widget.db, circuit: _circuit),
+        builder: (_) => CircuitPlayScreen(circuit: _circuit),
       ),
     );
   }
@@ -91,7 +88,6 @@ class _CircuitDetailScreenState extends State<CircuitDetailScreen> {
           _CircuitHeroHeader(circuit: _circuit),
           const SizedBox(height: 40),
           _CircuitExerciseList(
-            db: widget.db,
             circuitId: _circuit.id,
             circuitName: _circuit.name,
             stationDurationSeconds: _circuit.stationDurationSeconds,
@@ -208,7 +204,6 @@ class _CircuitHeroHeader extends StatelessWidget {
 }
 
 class _CircuitExerciseList extends StatelessWidget {
-  final AppDatabase db;
   final String circuitId;
   final String circuitName;
   final int? stationDurationSeconds;
@@ -216,7 +211,6 @@ class _CircuitExerciseList extends StatelessWidget {
   final VoidCallback onAddExercise;
 
   const _CircuitExerciseList({
-    required this.db,
     required this.circuitId,
     required this.circuitName,
     required this.stationDurationSeconds,
@@ -313,7 +307,6 @@ class _CircuitExerciseList extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _CircuitExerciseTile(
-                            db: db,
                             exercise: map[links[i].exerciseId],
                             link: links[i],
                             circuitName: circuitName,
@@ -333,14 +326,12 @@ class _CircuitExerciseList extends StatelessWidget {
 }
 
 class _CircuitExerciseTile extends StatelessWidget {
-  final AppDatabase db;
   final Exercise? exercise;
   final CircuitExercise link;
   final String circuitName;
   final int? stationDurationSeconds;
 
   const _CircuitExerciseTile({
-    required this.db,
     required this.exercise,
     required this.link,
     required this.circuitName,
@@ -362,7 +353,6 @@ class _CircuitExerciseTile extends StatelessWidget {
                 Navigator.of(context).push<void>(
                   MaterialPageRoute<void>(
                     builder: (_) => EditCircuitExerciseScreen(
-                      db: db,
                       link: link,
                       exercise: exercise!,
                       circuitName: circuitName,

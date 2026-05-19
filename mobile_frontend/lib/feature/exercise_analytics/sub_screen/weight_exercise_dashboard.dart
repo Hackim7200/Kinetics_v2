@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
-import 'package:mobile_frontend/database/database.dart' show AppDatabase;
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
-import 'package:mobile_frontend/feature/workout/data/session_sets_service.dart';
-import 'package:mobile_frontend/feature/workout/models/workout_log.dart';
-import 'package:mobile_frontend/feature/workout/widgets/progress_graph.dart';
-import 'package:mobile_frontend/feature/workout/widgets/small_stat_card.dart';
-import 'package:mobile_frontend/feature/workout/widgets/technique_notes_card.dart';
-import 'package:mobile_frontend/feature/workout/widgets/workout_detail_history_table.dart';
-import 'package:mobile_frontend/feature/workout/widgets/workout_table.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/session_sets_service.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/progress_graph.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/small_stat_card.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/technique_notes_card.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/workout_detail_history_table.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/workout_table.dart';
 
 bool _strengthSetHasValues(SetEntry s) {
   final w = s.weight;
@@ -39,26 +40,25 @@ bool _strengthSessionLooksComplete(List<SetEntry> sets, int maxSets) {
 /// Strength session grid: one editable row at a time (the latest set).
 /// Enter weight and reps, tap **ADD SET** to lock that row and open the next;
 /// on the last target set, tap **FINISH WORKOUT** to lock the table.
-class WeightExerciseDashboard extends StatefulWidget {
+class WeightExerciseDashboard extends ConsumerStatefulWidget {
   final Exercise exercise;
 
   /// Bumps [TechniqueNotesCard] key so saved notes refetch from Drift.
   final int techniqueNotesRefreshToken;
-  final AppDatabase db;
 
   const WeightExerciseDashboard({
     super.key,
-    required this.db,
     required this.exercise,
     this.techniqueNotesRefreshToken = 0,
   });
 
   @override
-  State<WeightExerciseDashboard> createState() =>
+  ConsumerState<WeightExerciseDashboard> createState() =>
       _WeightExerciseDashboardState();
 }
 
-class _WeightExerciseDashboardState extends State<WeightExerciseDashboard> {
+class _WeightExerciseDashboardState
+    extends ConsumerState<WeightExerciseDashboard> {
   late List<SetEntry> _sets;
   bool _workoutFinished = false;
   bool _sessionReady = true;
@@ -68,8 +68,7 @@ class _WeightExerciseDashboardState extends State<WeightExerciseDashboard> {
   List<String> _trainingLoadLabels = [];
   List<WorkoutLog> _historySessions = [];
   double? _maxWeightLast30Days;
-  late final SessionSetsService _sessionSetsService =
-      SessionSetsService(widget.db);
+  late final SessionSetsService _sessionSetsService;
   final GlobalKey<SessionLogTableState> _sessionTableKey =
       GlobalKey<SessionLogTableState>();
 
@@ -95,6 +94,7 @@ class _WeightExerciseDashboardState extends State<WeightExerciseDashboard> {
   @override
   void initState() {
     super.initState();
+    _sessionSetsService = SessionSetsService(ref.read(appDatabaseProvider));
     _sets = [const SetEntry(setNumber: 1)];
     final linkId = widget.exercise.routineExerciseId;
     if (linkId != null) {
@@ -319,7 +319,6 @@ class _WeightExerciseDashboardState extends State<WeightExerciseDashboard> {
       children: [
         TechniqueNotesCard(
           key: ValueKey(widget.techniqueNotesRefreshToken),
-          db: widget.db,
           exerciseId: widget.exercise.id,
         ),
         const SizedBox(height: 16),

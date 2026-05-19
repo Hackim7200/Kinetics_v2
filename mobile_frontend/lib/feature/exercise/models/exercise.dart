@@ -1,5 +1,5 @@
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
-import 'package:mobile_frontend/feature/workout/models/workout_log.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart';
 
 enum ExerciseType { strength, timer }
 

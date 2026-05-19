@@ -4,34 +4,30 @@ import 'dart:math';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.dart';
 
 /// Runs a circuit: same station duration per exercise; [Circuit.rounds] defaults to 1 if unset.
 /// Get-ready countdown uses [Circuit.preStartCountdownSeconds] (default 10s
 /// when unset; 0 skips). Rest between rounds uses [Circuit.restBetweenRoundsSeconds]
 /// (default 30s when unset).
-class CircuitPlayScreen extends StatefulWidget {
-  final AppDatabase db;
+class CircuitPlayScreen extends ConsumerStatefulWidget {
   final Circuit circuit;
 
-  const CircuitPlayScreen({
-    super.key,
-    required this.db,
-    required this.circuit,
-  });
+  const CircuitPlayScreen({super.key, required this.circuit});
 
   @override
-  State<CircuitPlayScreen> createState() => _CircuitPlayScreenState();
+  ConsumerState<CircuitPlayScreen> createState() => _CircuitPlayScreenState();
 }
 
 enum _CircuitPhase { preStart, work, roundRest }
 
-class _CircuitPlayScreenState extends State<CircuitPlayScreen> {
-  late final CircuitExerciseService _linkService =
-      CircuitExerciseService(widget.db);
+class _CircuitPlayScreenState extends ConsumerState<CircuitPlayScreen> {
+  late final CircuitExerciseService _linkService;
   late final AudioPlayer _beepPlayer;
   List<String> _stationNames = [];
   bool _loading = true;
@@ -107,6 +103,7 @@ class _CircuitPlayScreenState extends State<CircuitPlayScreen> {
   @override
   void initState() {
     super.initState();
+    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
     _beepPlayer = AudioPlayer();
     unawaited(_beepPlayer.setReleaseMode(ReleaseMode.stop));
     _loadStations();

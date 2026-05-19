@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_frontend/feature/workout/models/workout_log.dart';
-import 'package:mobile_frontend/feature/workout/widgets/horizontal_scroll_with_thumb.dart';
-import 'package:mobile_frontend/feature/workout/widgets/timer_add_timed_set_sheet.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/horizontal_scroll_with_thumb.dart';
 
-const double _timerDateColWidth = 92;
-const double _timerDurColWidth = 56;
+const double _dateColWidth = 92;
+const double _metricColWidth = 48;
 
-/// Past timer sessions: **Date** and **D1**…**DN** (duration `mm:ss`).
-class WorkoutDetailTimerHistoryTable extends StatelessWidget {
+/// Read-only table: one row per past session, columns **Date**, **W1**/**R1** … **WN**/**RN**.
+class WorkoutDetailHistoryTable extends StatelessWidget {
   final List<WorkoutLog> sessions;
 
-  const WorkoutDetailTimerHistoryTable({super.key, required this.sessions});
+  const WorkoutDetailHistoryTable({super.key, required this.sessions});
 
   static int _maxSetNumberAcross(List<WorkoutLog> sessions) {
     var maxN = 0;
     for (final w in sessions) {
       for (final s in w.sets) {
-        if (s.setNumber > maxN) maxN = s.setNumber;
+        if (s.setNumber > maxN) {
+          maxN = s.setNumber;
+        }
       }
     }
     return maxN;
@@ -25,21 +26,41 @@ class WorkoutDetailTimerHistoryTable extends StatelessWidget {
 
   static SetEntry? _setForNumber(WorkoutLog w, int n) {
     for (final s in w.sets) {
-      if (s.setNumber == n) return s;
+      if (s.setNumber == n) {
+        return s;
+      }
     }
     return null;
   }
 
-  static String _durationCell(SetEntry? e) {
-    final d = e?.durationSeconds;
-    if (d == null || d <= 0) return '—';
-    return formatTimerMinutesSeconds(Duration(seconds: d));
+  static String _weightCell(SetEntry? e) {
+    if (e?.weight == null) return '—';
+    final w = e!.weight!;
+    if (w == w.roundToDouble()) {
+      return w.toInt().toString();
+    }
+    return w.toStringAsFixed(1);
+  }
+
+  static String _repsCell(SetEntry? e) {
+    if (e?.reps == null) return '—';
+    return '${e!.reps}';
   }
 
   static String _dateLabel(DateTime d) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[d.month - 1]} ${d.day}';
   }
@@ -71,10 +92,10 @@ class WorkoutDetailTimerHistoryTable extends StatelessWidget {
     }
 
     final columnWidths = <int, TableColumnWidth>{
-      0: const FixedColumnWidth(_timerDateColWidth),
+      0: const FixedColumnWidth(_dateColWidth),
     };
-    for (var c = 0; c < maxN; c++) {
-      columnWidths[c + 1] = const FixedColumnWidth(_timerDurColWidth);
+    for (var c = 0; c < maxN * 2; c++) {
+      columnWidths[c + 1] = const FixedColumnWidth(_metricColWidth);
     }
 
     final headerStyle = GoogleFonts.inter(
@@ -94,7 +115,8 @@ class WorkoutDetailTimerHistoryTable extends StatelessWidget {
       color: cs.outlineVariant,
     );
 
-    Color? bandColor(int setNumber) =>
+    /// Odd set index (W1/R1, W3/R3, …): tinted band on **data** rows only.
+    Color? pairBandColor(int setNumber) =>
         setNumber.isOdd ? cs.surfaceContainerLow : null;
 
     TableRow headerRow() {
@@ -102,7 +124,8 @@ class WorkoutDetailTimerHistoryTable extends StatelessWidget {
         _HeaderCell(text: 'DATE', style: headerStyle),
       ];
       for (var n = 1; n <= maxN; n++) {
-        cells.add(_HeaderCell(text: 'D$n', style: headerStyle));
+        cells.add(_HeaderCell(text: 'W$n', style: headerStyle));
+        cells.add(_HeaderCell(text: 'R$n', style: headerStyle));
       }
       return TableRow(
         decoration: BoxDecoration(
@@ -134,12 +157,20 @@ class WorkoutDetailTimerHistoryTable extends StatelessWidget {
       ];
       for (var n = 1; n <= maxN; n++) {
         final e = _setForNumber(w, n);
-        final text = _durationCell(e);
-        final fill = bandColor(n);
+        final wText = _weightCell(e);
+        final rText = _repsCell(e);
+        final fill = pairBandColor(n);
         cells.add(
           _MetricCell(
-            text: text,
-            style: text == '—' ? emptyCellStyle : cellStyle,
+            text: wText,
+            style: wText == '—' ? emptyCellStyle : cellStyle,
+            fill: fill,
+          ),
+        );
+        cells.add(
+          _MetricCell(
+            text: rText,
+            style: rText == '—' ? emptyCellStyle : cellStyle,
             fill: fill,
           ),
         );
@@ -192,7 +223,7 @@ class WorkoutDetailTimerHistoryTable extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 0, 0, 8),
             child: HorizontalScrollWithThumb(
-              thumbVisibility: maxN > 4,
+              thumbVisibility: maxN > 3,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: table,
             ),

@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise_ui_mapper.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 import 'package:mobile_frontend/feature/routine/routine_last_session_format.dart';
 import 'package:mobile_frontend/feature/routine/screens/add_exercise_screen.dart';
 import 'package:mobile_frontend/feature/routine/screens/edit_routine_screen.dart';
-import 'package:mobile_frontend/feature/workout/data/workout_log_stats.dart';
-import 'package:mobile_frontend/feature/workout/exercise_analytics_screen.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/workout_log_stats.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/exercise_analytics_screen.dart';
 
 class _ExerciseProgressStyle {
   final Color dotColor;
@@ -104,36 +106,31 @@ String _subtitleLine(
   }
 }
 
-class ExerciseListScreen extends StatefulWidget {
-  final AppDatabase db;
+class ExerciseListScreen extends ConsumerStatefulWidget {
   final Routine routine;
 
-  const ExerciseListScreen({
-    super.key,
-    required this.db,
-    required this.routine,
-  });
+  const ExerciseListScreen({super.key, required this.routine});
 
   @override
-  State<ExerciseListScreen> createState() => _ExerciseListScreenState();
+  ConsumerState<ExerciseListScreen> createState() =>
+      _ExerciseListScreenState();
 }
 
-class _ExerciseListScreenState extends State<ExerciseListScreen> {
+class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   late Routine _routine;
-  late final RoutineExerciseService _linkService = RoutineExerciseService(
-    widget.db,
-  );
+  late final RoutineExerciseService _linkService;
 
   @override
   void initState() {
     super.initState();
     _routine = widget.routine;
+    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
   }
 
   Future<void> _openEdit() async {
     final updated = await Navigator.of(context).push<Routine>(
       MaterialPageRoute(
-        builder: (_) => EditRoutineScreen(db: widget.db, routine: _routine),
+        builder: (_) => EditRoutineScreen(routine: _routine),
       ),
     );
     if (updated != null && mounted) setState(() => _routine = updated);
@@ -143,7 +140,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => AddExerciseScreen(
-          db: widget.db,
           routineId: _routine.id,
           routineName: _routine.name,
         ),
@@ -174,7 +170,6 @@ class _ExerciseListScreenState extends State<ExerciseListScreen> {
           _HeroHeader(routine: _routine, linkService: _linkService),
           const SizedBox(height: 40),
           _ExerciseList(
-            db: widget.db,
             routineId: _routine.id,
             routineName: _routine.name,
             linkService: _linkService,
@@ -260,14 +255,12 @@ class _HeroHeader extends StatelessWidget {
 }
 
 class _ExerciseList extends StatelessWidget {
-  final AppDatabase db;
   final String routineId;
   final String routineName;
   final RoutineExerciseService linkService;
   final VoidCallback onAddExercise;
 
   const _ExerciseList({
-    required this.db,
     required this.routineId,
     required this.routineName,
     required this.linkService,
@@ -368,7 +361,6 @@ class _ExerciseList extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: _ExerciseTile(
-                                db: db,
                                 exercise: map[links[i].exerciseId],
                                 link: links[i],
                                 listIndex: i,
@@ -397,7 +389,6 @@ class _ExerciseList extends StatelessWidget {
 }
 
 class _ExerciseTile extends StatelessWidget {
-  final AppDatabase db;
   final Exercise? exercise;
   final RoutineExercise link;
   final int listIndex;
@@ -405,7 +396,6 @@ class _ExerciseTile extends StatelessWidget {
   final double? trainingLoadChangePercent;
 
   const _ExerciseTile({
-    required this.db,
     required this.exercise,
     required this.link,
     required this.listIndex,
@@ -435,7 +425,6 @@ class _ExerciseTile extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => ExerciseAnalyticsScreen(
-                db: db,
                 exercise: detailExercise,
                 routineLink: link,
                 storedExercise: exercise,
