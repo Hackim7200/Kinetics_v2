@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_frontend/feature/auth/data/onboarding_pref.dart';
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -38,8 +39,11 @@ class OnboardingScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               FilledButton(
-                onPressed: () => context.go('/home'),
-                child: const Text('Explore Now'),
+                onPressed: () async {
+                  await OnboardingPrefs.setComplete();
+                  if (context.mounted) context.go('/home');
+                },
+                child: const Text('Start Now'),
               ),
               const SizedBox(height: 12),
               TextButton(

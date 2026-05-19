@@ -1,22 +1,25 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mobile_frontend/common/widgets/placeholder_screen.dart';
+import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/feature/circuit/circuit_dashboard_screen.dart';
+import 'package:mobile_frontend/feature/routine/routine_list_screen.dart';
 
-class MainShell extends StatefulWidget {
-  const MainShell({super.key});
+class AppShell extends StatefulWidget {
+  const AppShell({super.key, required this.db});
+
+  final AppDatabase db;
 
   @override
-  State<MainShell> createState() => _MainShellState();
+  State<AppShell> createState() => _AppShellState();
 }
 
-class _MainShellState extends State<MainShell> {
+class _AppShellState extends State<AppShell> {
   int _currentIndex = 0;
 
-  final _screens = const [
-    PlaceholderScreen(title: 'Workouts', icon: Icons.fitness_center),
-    PlaceholderScreen(title: 'Circuits', icon: Icons.loop),
-    PlaceholderScreen(title: 'Reflex', icon: Icons.psychology),
+  late final List<Widget> _screens = [
+    RoutineListScreen(db: widget.db),
+    CircuitDashboardScreen(db: widget.db),
   ];
 
   @override
@@ -69,12 +72,6 @@ class _BottomNavBar extends StatelessWidget {
                     label: 'CIRCUITS',
                     isActive: currentIndex == 1,
                     onTap: () => onTap(1),
-                  ),
-                  _NavItem(
-                    icon: Icons.psychology,
-                    label: 'REFLEX',
-                    isActive: currentIndex == 2,
-                    onTap: () => onTap(2),
                   ),
                 ],
               ),

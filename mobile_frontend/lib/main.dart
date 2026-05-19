@@ -1,6 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mobile_frontend/app/app.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mobile_frontend/app/navigation/app_router.dart';
+import 'package:mobile_frontend/app/themes/app_theme.dart';
+import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/feature/auth/data/onboarding_pref.dart';
+import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -8,5 +15,42 @@ Future<void> main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  runApp(const KineticsApp());
+
+  final onboardingComplete = await OnboardingPrefs.isComplete();
+  final db = await _initDatabase();
+  final router = createAppRouter(
+    db: db,
+    onboardingComplete: onboardingComplete,
+  );
+
+  runApp(MyApp(router: router));
+}
+
+Future<AppDatabase> _initDatabase() async {
+  final Directory appDocDir = await getApplicationDocumentsDirectory();
+  final Directory dbDir = Directory('${appDocDir.path}/db');
+
+  if (!await dbDir.exists()) {
+    await dbDir.create();
+  }
+
+  return AppDatabase(dbDirectory: dbDir, sqliteFileName: 'app.db');
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key, required this.router});
+
+  final GoRouter router;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp.router(
+      title: 'Kinetics',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
+      routerConfig: router,
+    );
+  }
 }
