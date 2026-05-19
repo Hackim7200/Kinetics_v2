@@ -21,14 +21,14 @@ class RoutineListScreen extends ConsumerStatefulWidget {
 
 class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
   late final RoutineService _service;
-  late final RoutineExerciseService _linkService;
+  late final RoutineExerciseService _routineExerciseService;
 
   @override
   void initState() {
     super.initState();
     final db = ref.read(appDatabaseProvider);
     _service = RoutineService(db);
-    _linkService = RoutineExerciseService(db);
+    _routineExerciseService = RoutineExerciseService(db);
   }
 
   @override
@@ -71,10 +71,10 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
           }
 
           return StreamBuilder<List<RoutineExercise>>(
-            stream: _linkService.watchAllRoutineExerciseLinks(),
+            stream: _routineExerciseService.watchAllRoutineExerciseLinks(),
             builder: (context, linkSnap) {
               return StreamBuilder<List<WorkoutLog>>(
-                stream: _linkService.watchAllWorkoutLogs(),
+                stream: _routineExerciseService.watchAllWorkoutLogs(),
                 builder: (context, logSnap) {
                   final links = linkSnap.data ?? const <RoutineExercise>[];
                   final logs = logSnap.data ?? const <WorkoutLog>[];

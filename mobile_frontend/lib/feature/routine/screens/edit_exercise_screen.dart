@@ -30,7 +30,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _setsController;
   late final TextEditingController _repsController;
-  late final RoutineExerciseService _linkService;
+  late final RoutineExerciseService _routineExerciseService;
   late String _type;
   late String _timerTarget;
   bool _saving = false;
@@ -39,7 +39,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
   @override
   void initState() {
     super.initState();
-    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
+    _routineExerciseService = RoutineExerciseService(ref.read(appDatabaseProvider));
     final ex = widget.exercise;
     final link = widget.link;
     _nameController = TextEditingController(text: ex.name);
@@ -96,7 +96,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
     setState(() => _saving = true);
 
     try {
-      await _linkService.updateExerciseInRoutine(
+      await _routineExerciseService.updateExerciseInRoutine(
         exercise: widget.exercise,
         link: widget.link,
         name: name,
@@ -145,7 +145,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
 
     setState(() => _deleting = true);
     try {
-      await _linkService.deleteExerciseEntry(
+      await _routineExerciseService.deleteExerciseEntry(
         link: widget.link,
         exercise: widget.exercise,
       );

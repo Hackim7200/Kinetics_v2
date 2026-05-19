@@ -39,7 +39,7 @@ class ExerciseAnalyticsScreen extends ConsumerStatefulWidget {
 
 class _ExerciseAnalyticsScreenState
     extends ConsumerState<ExerciseAnalyticsScreen> {
-  late final RoutineExerciseService _linkService;
+  late final RoutineExerciseService _routineExerciseService;
   late Exercise _exercise;
   int _techniqueNotesRefreshToken = 0;
 
@@ -49,7 +49,7 @@ class _ExerciseAnalyticsScreenState
   @override
   void initState() {
     super.initState();
-    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
+    _routineExerciseService = RoutineExerciseService(ref.read(appDatabaseProvider));
     _exercise = widget.exercise;
   }
 
@@ -66,9 +66,9 @@ class _ExerciseAnalyticsScreenState
     if (link == null || stored == null) return;
 
     try {
-      final links = await _linkService.linksForRoutine(link.routineId);
+      final links = await _routineExerciseService.linksForRoutine(link.routineId);
       final linkRow = links.where((l) => l.id == link.id).firstOrNull;
-      final exercises = await _linkService.exerciseMapForIds({stored.id});
+      final exercises = await _routineExerciseService.exerciseMapForIds({stored.id});
       final exerciseRow = exercises[stored.id];
       if (!mounted || linkRow == null || exerciseRow == null) return;
       setState(() {

@@ -26,14 +26,14 @@ class EditCircuitExerciseScreen extends ConsumerStatefulWidget {
 class _EditCircuitExerciseScreenState
     extends ConsumerState<EditCircuitExerciseScreen> {
   late final TextEditingController _nameController;
-  late final CircuitExerciseService _linkService;
+  late final CircuitExerciseService _circuitExerciseService;
   bool _saving = false;
   bool _deleting = false;
 
   @override
   void initState() {
     super.initState();
-    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
+    _circuitExerciseService = CircuitExerciseService(ref.read(appDatabaseProvider));
     _nameController = TextEditingController(text: widget.exercise.name);
   }
 
@@ -50,7 +50,7 @@ class _EditCircuitExerciseScreenState
     setState(() => _saving = true);
 
     try {
-      await _linkService.updateExerciseInCircuit(
+      await _circuitExerciseService.updateExerciseInCircuit(
         exercise: widget.exercise,
         name: name,
       );
@@ -91,7 +91,7 @@ class _EditCircuitExerciseScreenState
 
     setState(() => _deleting = true);
     try {
-      await _linkService.deleteExerciseEntry(
+      await _circuitExerciseService.deleteExerciseEntry(
         link: widget.link,
         exercise: widget.exercise,
       );

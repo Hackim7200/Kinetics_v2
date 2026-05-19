@@ -22,14 +22,14 @@ class CircuitDashboardScreen extends ConsumerStatefulWidget {
 
 class _CircuitDashboardScreenState extends ConsumerState<CircuitDashboardScreen> {
   late final CircuitService _service;
-  late final CircuitExerciseService _linkService;
+  late final CircuitExerciseService _circuitExerciseService;
 
   @override
   void initState() {
     super.initState();
     final db = ref.read(appDatabaseProvider);
     _service = CircuitService(db);
-    _linkService = CircuitExerciseService(db);
+    _circuitExerciseService = CircuitExerciseService(db);
   }
 
   void _openCreate() {
@@ -76,7 +76,7 @@ class _CircuitDashboardScreenState extends ConsumerState<CircuitDashboardScreen>
           }
 
           return StreamBuilder<List<CircuitExercise>>(
-            stream: _linkService.watchAllCircuitExerciseLinks(),
+            stream: _circuitExerciseService.watchAllCircuitExerciseLinks(),
             builder: (context, linkSnap) {
               final counts = linkSnap.hasData
                   ? CircuitExerciseService.exerciseCountsByCircuitId(

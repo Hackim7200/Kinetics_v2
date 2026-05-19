@@ -23,12 +23,12 @@ class AddCircuitExerciseScreen extends ConsumerStatefulWidget {
 class _AddCircuitExerciseScreenState
     extends ConsumerState<AddCircuitExerciseScreen> {
   final _nameController = TextEditingController();
-  late final CircuitExerciseService _linkService;
+  late final CircuitExerciseService _circuitExerciseService;
 
   @override
   void initState() {
     super.initState();
-    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
+    _circuitExerciseService = CircuitExerciseService(ref.read(appDatabaseProvider));
   }
   bool _saving = false;
 
@@ -45,7 +45,7 @@ class _AddCircuitExerciseScreenState
     setState(() => _saving = true);
 
     try {
-      await _linkService.addExerciseToCircuit(
+      await _circuitExerciseService.addExerciseToCircuit(
         circuitId: widget.circuitId,
         name: name,
       );

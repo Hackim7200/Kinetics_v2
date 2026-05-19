@@ -26,7 +26,7 @@ class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
   late final TextEditingController _preStartCountdownController;
   late final TextEditingController _restBetweenRoundsController;
   late final CircuitService _service;
-  late final CircuitExerciseService _linkService;
+  late final CircuitExerciseService _circuitExerciseService;
   bool _saving = false;
   bool _deleting = false;
   late bool _randomizeStationOrder;
@@ -36,7 +36,7 @@ class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
     super.initState();
     final db = ref.read(appDatabaseProvider);
     _service = CircuitService(db);
-    _linkService = CircuitExerciseService(db);
+    _circuitExerciseService = CircuitExerciseService(db);
     final c = widget.circuit;
     _nameController = TextEditingController(text: c.name);
     _descriptionController = TextEditingController(text: c.description ?? '');
@@ -428,7 +428,7 @@ class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
 
   Widget _buildDerivedExerciseCount(ColorScheme cs) {
     return StreamBuilder<List<CircuitExercise>>(
-      stream: _linkService.watchForCircuit(widget.circuit.id),
+      stream: _circuitExerciseService.watchForCircuit(widget.circuit.id),
       builder: (context, snapshot) {
         final n = snapshot.data?.length ?? 0;
         return Column(

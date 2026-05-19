@@ -27,12 +27,12 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
   final _nameController = TextEditingController();
   final _setsController = TextEditingController();
   final _repsController = TextEditingController();
-  late final RoutineExerciseService _linkService;
+  late final RoutineExerciseService _routineExerciseService;
 
   @override
   void initState() {
     super.initState();
-    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
+    _routineExerciseService = RoutineExerciseService(ref.read(appDatabaseProvider));
   }
   String _type = 'strength';
   String _timerTarget = TimerRoutineTarget.increase;
@@ -81,7 +81,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     setState(() => _saving = true);
 
     try {
-      await _linkService.addExerciseToRoutine(
+      await _routineExerciseService.addExerciseToRoutine(
         routineId: widget.routineId,
         name: name,
         type: _type,

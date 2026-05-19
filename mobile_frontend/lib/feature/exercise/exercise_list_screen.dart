@@ -118,13 +118,13 @@ class ExerciseListScreen extends ConsumerStatefulWidget {
 
 class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
   late Routine _routine;
-  late final RoutineExerciseService _linkService;
+  late final RoutineExerciseService _routineExerciseService;
 
   @override
   void initState() {
     super.initState();
     _routine = widget.routine;
-    _linkService = RoutineExerciseService(ref.read(appDatabaseProvider));
+    _routineExerciseService = RoutineExerciseService(ref.read(appDatabaseProvider));
   }
 
   Future<void> _openEdit() async {
@@ -167,12 +167,12 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
         children: [
-          _HeroHeader(routine: _routine, linkService: _linkService),
+          _HeroHeader(routine: _routine, routineExerciseService: _routineExerciseService),
           const SizedBox(height: 40),
           _ExerciseList(
             routineId: _routine.id,
             routineName: _routine.name,
-            linkService: _linkService,
+            routineExerciseService: _routineExerciseService,
             onAddExercise: _addExercise,
           ),
         ],
@@ -183,9 +183,9 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
 
 class _HeroHeader extends StatelessWidget {
   final Routine routine;
-  final RoutineExerciseService linkService;
+  final RoutineExerciseService routineExerciseService;
 
-  const _HeroHeader({required this.routine, required this.linkService});
+  const _HeroHeader({required this.routine, required this.routineExerciseService});
 
   @override
   Widget build(BuildContext context) {
@@ -215,12 +215,12 @@ class _HeroHeader extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         StreamBuilder<List<RoutineExercise>>(
-          stream: linkService.watchForRoutine(routine.id),
+          stream: routineExerciseService.watchForRoutine(routine.id),
           builder: (context, linkSnap) {
             final links = linkSnap.data ?? const <RoutineExercise>[];
             final n = links.length;
             return StreamBuilder<List<WorkoutLog>>(
-              stream: linkService.watchAllWorkoutLogs(),
+              stream: routineExerciseService.watchAllWorkoutLogs(),
               builder: (context, logSnap) {
                 DateTime? last;
                 if (links.isNotEmpty && logSnap.hasData) {
@@ -257,13 +257,13 @@ class _HeroHeader extends StatelessWidget {
 class _ExerciseList extends StatelessWidget {
   final String routineId;
   final String routineName;
-  final RoutineExerciseService linkService;
+  final RoutineExerciseService routineExerciseService;
   final VoidCallback onAddExercise;
 
   const _ExerciseList({
     required this.routineId,
     required this.routineName,
-    required this.linkService,
+    required this.routineExerciseService,
     required this.onAddExercise,
   });
 
@@ -272,7 +272,7 @@ class _ExerciseList extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return StreamBuilder<List<RoutineExercise>>(
-      stream: linkService.watchForRoutine(routineId),
+      stream: routineExerciseService.watchForRoutine(routineId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text(
@@ -340,7 +340,7 @@ class _ExerciseList extends StatelessWidget {
               /// List of exercises for a routine
               FutureBuilder<Map<String, Exercise>>(
                 key: ValueKey(links.map((e) => e.id).join(',')),
-                future: linkService.exerciseMapForIds(
+                future: routineExerciseService.exerciseMapForIds(
                   links.map((l) => l.exerciseId).toSet(),
                 ),
                 builder: (context, exSnap) {
@@ -352,7 +352,7 @@ class _ExerciseList extends StatelessWidget {
                   }
                   final map = exSnap.data!;
                   return StreamBuilder<List<WorkoutLog>>(
-                    stream: linkService.watchAllWorkoutLogs(),
+                    stream: routineExerciseService.watchAllWorkoutLogs(),
                     builder: (context, logSnap) {
                       final logs = logSnap.data ?? const <WorkoutLog>[];
                       return Column(

@@ -21,7 +21,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late final RoutineService _service;
-  late final RoutineExerciseService _linkService;
+  late final RoutineExerciseService _routineExerciseService;
   bool _saving = false;
   bool _deleting = false;
 
@@ -30,7 +30,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
     super.initState();
     final db = ref.read(appDatabaseProvider);
     _service = RoutineService(db);
-    _linkService = RoutineExerciseService(db);
+    _routineExerciseService = RoutineExerciseService(db);
     final r = widget.routine;
     _nameController = TextEditingController(text: r.name);
     _descriptionController = TextEditingController(text: r.description ?? '');
@@ -240,7 +240,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
 
   Widget _buildDerivedExerciseCount(ColorScheme cs) {
     return StreamBuilder<List<RoutineExercise>>(
-      stream: _linkService.watchForRoutine(widget.routine.id),
+      stream: _routineExerciseService.watchForRoutine(widget.routine.id),
       builder: (context, snapshot) {
         final n = snapshot.data?.length ?? 0;
         return Column(

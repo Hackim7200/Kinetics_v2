@@ -28,13 +28,13 @@ class CircuitDetailScreen extends ConsumerStatefulWidget {
 
 class _CircuitDetailScreenState extends ConsumerState<CircuitDetailScreen> {
   late Circuit _circuit;
-  late final CircuitExerciseService _linkService;
+  late final CircuitExerciseService circuitExerciseService;
 
   @override
   void initState() {
     super.initState();
     _circuit = widget.circuit;
-    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
+    circuitExerciseService = CircuitExerciseService(ref.read(appDatabaseProvider));
   }
 
   Future<void> _openEdit() async {
@@ -91,7 +91,7 @@ class _CircuitDetailScreenState extends ConsumerState<CircuitDetailScreen> {
             circuitId: _circuit.id,
             circuitName: _circuit.name,
             stationDurationSeconds: _circuit.stationDurationSeconds,
-            linkService: _linkService,
+            circuitExerciseService: circuitExerciseService,
             onAddExercise: _addExercise,
           ),
         ],
@@ -207,14 +207,14 @@ class _CircuitExerciseList extends StatelessWidget {
   final String circuitId;
   final String circuitName;
   final int? stationDurationSeconds;
-  final CircuitExerciseService linkService;
+  final CircuitExerciseService circuitExerciseService;
   final VoidCallback onAddExercise;
 
   const _CircuitExerciseList({
     required this.circuitId,
     required this.circuitName,
     required this.stationDurationSeconds,
-    required this.linkService,
+    required this.circuitExerciseService,
     required this.onAddExercise,
   });
 
@@ -223,7 +223,7 @@ class _CircuitExerciseList extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return StreamBuilder<List<CircuitExercise>>(
-      stream: linkService.watchForCircuit(circuitId),
+      stream: circuitExerciseService.watchForCircuit(circuitId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Text(
@@ -290,7 +290,7 @@ class _CircuitExerciseList extends StatelessWidget {
             else
               FutureBuilder<Map<String, Exercise>>(
                 key: ValueKey(links.map((e) => e.id).join(',')),
-                future: linkService.exerciseMapForIds(
+                future: circuitExerciseService.exerciseMapForIds(
                   links.map((l) => l.exerciseId).toSet(),
                 ),
                 builder: (context, exSnap) {

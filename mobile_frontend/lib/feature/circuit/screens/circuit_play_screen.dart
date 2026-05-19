@@ -27,7 +27,7 @@ class CircuitPlayScreen extends ConsumerStatefulWidget {
 enum _CircuitPhase { preStart, work, roundRest }
 
 class _CircuitPlayScreenState extends ConsumerState<CircuitPlayScreen> {
-  late final CircuitExerciseService _linkService;
+  late final CircuitExerciseService _circuitExerciseService;
   late final AudioPlayer _beepPlayer;
   List<String> _stationNames = [];
   bool _loading = true;
@@ -103,7 +103,7 @@ class _CircuitPlayScreenState extends ConsumerState<CircuitPlayScreen> {
   @override
   void initState() {
     super.initState();
-    _linkService = CircuitExerciseService(ref.read(appDatabaseProvider));
+    _circuitExerciseService = CircuitExerciseService(ref.read(appDatabaseProvider));
     _beepPlayer = AudioPlayer();
     unawaited(_beepPlayer.setReleaseMode(ReleaseMode.stop));
     _loadStations();
@@ -118,8 +118,8 @@ class _CircuitPlayScreenState extends ConsumerState<CircuitPlayScreen> {
 
   Future<void> _loadStations() async {
     try {
-      final links = await _linkService.linksForCircuit(widget.circuit.id);
-      final map = await _linkService.exerciseMapForIds(
+      final links = await _circuitExerciseService.linksForCircuit(widget.circuit.id);
+      final map = await _circuitExerciseService.exerciseMapForIds(
         links.map((l) => l.exerciseId).toSet(),
       );
       final names = links
