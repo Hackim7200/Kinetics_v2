@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/app/navigation/app_shell.dart';
-import 'package:mobile_frontend/app/navigation/app_shell_2.dart';
 import 'package:mobile_frontend/feature/auth/screens/onboarding_screen.dart';
 import 'package:mobile_frontend/feature/auth/screens/sign_in_screen.dart';
 
@@ -33,7 +32,7 @@ GoRouter createAppRouter({required bool onboardingComplete}) {
       GoRoute(
         path: '/home',
         builder: (BuildContext context, GoRouterState state) {
-          return const AppShell2();
+          return const AppShell();
         },
       ),
     ],

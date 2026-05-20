@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_frontend/common/widgets/detail_hero_header.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
+import 'package:mobile_frontend/common/widgets/metric_pill.dart';
 import 'package:mobile_frontend/database/database.dart';
 import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.dart';
@@ -86,7 +88,10 @@ class _CircuitDetailScreenState extends ConsumerState<CircuitDetailScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
         children: [
-          _CircuitHeroHeader(circuit: _circuit),
+          _CircuitHeroHeader(
+            circuit: _circuit,
+            circuitExerciseService: circuitExerciseService,
+          ),
           const SizedBox(height: 40),
           _CircuitExerciseList(
             circuitId: _circuit.id,
@@ -110,12 +115,15 @@ class _CircuitDetailScreenState extends ConsumerState<CircuitDetailScreen> {
 
 class _CircuitHeroHeader extends StatelessWidget {
   final Circuit circuit;
+  final CircuitExerciseService circuitExerciseService;
 
-  const _CircuitHeroHeader({required this.circuit});
+  const _CircuitHeroHeader({
+    required this.circuit,
+    required this.circuitExerciseService,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final roundsLabel = circuit.rounds?.toString() ?? '—';
     final sec = circuit.stationDurationSeconds;
     final durationLabel = sec != null ? '$sec SEC' : '—';
@@ -131,75 +139,40 @@ class _CircuitHeroHeader extends StatelessWidget {
         ? 'RANDOM'
         : 'LIST';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'ACTIVE CIRCUIT',
-          style: GoogleFonts.inter(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 3,
-            color: cs.tertiary,
+    return DetailHeroHeader(
+      eyebrowLabel: 'ACTIVE CIRCUIT',
+      title: circuit.name,
+      metrics: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          MetricPillPair(
+            leftLabel: 'ROUNDS',
+            leftValue: roundsLabel,
+            rightLabel: 'ORDER',
+            rightValue: orderLabel,
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          circuit.name.toUpperCase(),
-          style: GoogleFonts.inter(
-            fontSize: 48,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -2,
-            height: 1.0,
-            color: cs.onSurface,
+          const SizedBox(height: 12),
+          MetricPillPair(
+            leftLabel: 'COUNTDOWN',
+            leftValue: preStartLabel,
+            rightLabel: 'REST',
+            rightValue: restLabel,
           ),
-        ),
-        const SizedBox(height: 16),
-        _CircuitHeroHeader._metricsRow(
-          cs,
-          left: _MetricPill(label: 'ROUNDS', value: roundsLabel),
-          right: _MetricPill(label: 'ORDER', value: orderLabel),
-        ),
-        const SizedBox(height: 12),
-        _CircuitHeroHeader._metricsRow(
-          cs,
-          left: _MetricPill(label: 'COUNTDOWN', value: preStartLabel),
-          right:         _MetricPill(label: 'REST', value: restLabel),
-        ),
-        const SizedBox(height: 12),
-        _CircuitHeroHeader._metricsRow(
-          cs,
-          left: _MetricPill(label: 'EACH EXERCISE', value: durationLabel),
-  
-          right: const SizedBox.shrink(),
-          showCenterRule: false,
-        ),
-      ],
-    );
-  }
-
-  /// Two equal columns; optional vertical rule (same width as rule + margins when off).
-  static Widget _metricsRow(
-    ColorScheme cs, {
-    required Widget left,
-    required Widget right,
-    bool showCenterRule = true,
-  }) {
-    final gutter = showCenterRule
-        ? Container(
-            width: 1,
-            height: 32,
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            color: cs.surfaceContainerHighest,
-          )
-        : const SizedBox(width: 49);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(child: left),
-        gutter,
-        Expanded(child: right),
-      ],
+          const SizedBox(height: 12),
+          StreamBuilder<List<CircuitExercise>>(
+            stream: circuitExerciseService.watchForCircuit(circuit.id),
+            builder: (context, snap) {
+              final n = snap.data?.length ?? 0;
+              return MetricPillPair(
+                leftLabel: 'EACH EXERCISE',
+                leftValue: durationLabel,
+                rightLabel: 'EXERCISES',
+                rightValue: '$n',
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -397,41 +370,6 @@ class _CircuitExerciseTile extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _MetricPill extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _MetricPill({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 2,
-            color: cs.outline,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: cs.onSurface,
-          ),
-        ),
-      ],
     );
   }
 }
