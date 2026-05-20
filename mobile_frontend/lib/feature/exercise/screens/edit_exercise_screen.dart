@@ -5,38 +5,53 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
+import 'package:mobile_frontend/database/database.dart';
 import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 
-/// Full-screen form to add an exercise to a routine (matches [CreateRoutineScreen] layout).
-class AddExerciseScreen extends ConsumerStatefulWidget {
-  final String routineId;
+class EditExerciseScreen extends ConsumerStatefulWidget {
+  final RoutineExercise routineExercise;
+  final Exercise exercise;
   final String? routineName;
 
-  const AddExerciseScreen({
+  const EditExerciseScreen({
     super.key,
-    required this.routineId,
+    required this.routineExercise,
+    required this.exercise,
     this.routineName,
   });
 
   @override
-  ConsumerState<AddExerciseScreen> createState() => _AddExerciseScreenState();
+  ConsumerState<EditExerciseScreen> createState() =>
+      _EditExerciseScreenState();
 }
 
-class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
-  final _nameController = TextEditingController();
-  final _setsController = TextEditingController();
-  final _repsController = TextEditingController();
+class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _setsController;
+  late final TextEditingController _repsController;
   late final RoutineExerciseService _routineExerciseService;
+  late String _type;
+  late String _timerTarget;
+  bool _saving = false;
+  bool _deleting = false;
 
   @override
   void initState() {
     super.initState();
     _routineExerciseService = RoutineExerciseService(ref.read(appDatabaseProvider));
+    final ex = widget.exercise;
+    final routineExercise = widget.routineExercise;
+    _nameController = TextEditingController(text: ex.name);
+    _type = ex.type == 'timer' ? 'timer' : 'strength';
+    _setsController = TextEditingController(
+      text: routineExercise.targetSets?.toString() ?? '',
+    );
+    _repsController = TextEditingController(text: routineExercise.targetReps ?? '');
+    _timerTarget = TimerRoutineTarget.isValid(routineExercise.timerTarget)
+        ? routineExercise.timerTarget!
+        : TimerRoutineTarget.increase;
   }
-  String _type = 'strength';
-  String _timerTarget = TimerRoutineTarget.increase;
-  bool _saving = false;
 
   @override
   void dispose() {
@@ -81,8 +96,9 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     setState(() => _saving = true);
 
     try {
-      await _routineExerciseService.addExerciseToRoutine(
-        routineId: widget.routineId,
+      await _routineExerciseService.updateExerciseInRoutine(
+        exercise: widget.exercise,
+        routineExercise: widget.routineExercise,
         name: name,
         type: _type,
         targetSets: _type == 'strength' || _type == 'timer'
@@ -91,15 +107,56 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
         targetReps: _type == 'strength' ? _repsController.text.trim() : null,
         timerTarget: _type == 'timer' ? _timerTarget : null,
       );
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop('saved');
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed to add exercise: $e')));
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _confirmAndDeleteExercise() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Exercise'),
+        content: Text(
+          'Remove "${widget.exercise.name}" from this routine? '
+          'Session history for this exercise will be deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await _routineExerciseService.deleteExerciseEntry(
+        routineExercise: widget.routineExercise,
+        exercise: widget.exercise,
+      );
+      if (mounted) Navigator.of(context).pop('deleted');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to delete: $e')));
+        setState(() => _deleting = false);
+      }
     }
   }
 
@@ -110,18 +167,18 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
 
     return Scaffold(
       appBar: KineticAppBar(
-        title: 'NEW EXERCISE',
+        title: 'EDIT EXERCISE',
         showBackButton: true,
         actions: [
           GestureDetector(
-            onTap: _saving ? null : _save,
+            onTap: (_saving || _deleting) ? null : _save,
             child: Text(
               'SAVE',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2,
-                color: _saving ? cs.outline : cs.primary,
+                color: (_saving || _deleting) ? cs.outline : cs.primary,
               ),
             ),
           ),
@@ -131,7 +188,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
         children: [
           Text(
-            'ADD',
+            'UPDATE',
             style: GoogleFonts.inter(
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -141,9 +198,9 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'EXERCISE',
+            widget.exercise.name.toUpperCase(),
             style: GoogleFonts.inter(
-              fontSize: 36,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
               letterSpacing: -1.5,
               height: 1.0,
@@ -219,7 +276,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: _saving ? null : _save,
+                onTap: (_saving || _deleting) ? null : _save,
                 borderRadius: BorderRadius.circular(4),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20),
@@ -234,7 +291,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                             ),
                           )
                         : Text(
-                            'ADD EXERCISE',
+                            'SAVE CHANGES',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -245,6 +302,32 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                   ),
                 ),
               ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: (_saving || _deleting)
+                  ? null
+                  : _confirmAndDeleteExercise,
+              child: _deleting
+                  ? SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: cs.error,
+                      ),
+                    )
+                  : Text(
+                      'Delete Exercise',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2,
+                        color: cs.error,
+                      ),
+                    ),
             ),
           ),
         ],

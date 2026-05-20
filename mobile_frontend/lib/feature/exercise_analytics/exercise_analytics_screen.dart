@@ -7,7 +7,7 @@ import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise_ui_mapper.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
-import 'package:mobile_frontend/feature/routine/screens/edit_exercise_screen.dart';
+import 'package:mobile_frontend/feature/exercise/screens/edit_exercise_screen.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/sub_screen/timer_exercise_dashboard.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/sub_screen/weight_exercise_dashboard.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/technique_notes_editor.dart';
@@ -66,8 +66,11 @@ class _ExerciseAnalyticsScreenState
     if (link == null || stored == null) return;
 
     try {
-      final links = await _routineExerciseService.linksForRoutine(link.routineId);
-      final linkRow = links.where((l) => l.id == link.id).firstOrNull;
+      final routineExercises = await _routineExerciseService
+          .routineExercisesForRoutine(link.routineId);
+      final linkRow = routineExercises
+          .where((re) => re.id == link.id)
+          .firstOrNull;
       final exercises = await _routineExerciseService.exerciseMapForIds({stored.id});
       final exerciseRow = exercises[stored.id];
       if (!mounted || linkRow == null || exerciseRow == null) return;
@@ -88,7 +91,7 @@ class _ExerciseAnalyticsScreenState
     final result = await Navigator.of(context).push<String>(
       MaterialPageRoute<String>(
         builder: (_) => EditExerciseScreen(
-          link: widget.routineLink!,
+          routineExercise: widget.routineLink!,
           exercise: widget.storedExercise!,
           routineName: widget.routineName,
         ),

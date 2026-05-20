@@ -34,36 +34,36 @@ int? _parseRepsFromTarget(String raw) {
   return int.tryParse(m.group(0)!);
 }
 
-/// Maps Drift exercise + routine link into the feature [Exercise] for workout UI.
+/// Maps Drift exercise + [RoutineExercise] into the feature [Exercise] for workout UI.
 Exercise exerciseForWorkoutDetail(
   drift.Exercise? storedExercise,
-  drift.RoutineExercise link,
+  drift.RoutineExercise routineExercise,
   int listIndex,
 ) {
   final isTimer = storedExercise?.type == 'timer';
   final name = storedExercise?.name ?? 'Unknown exercise';
 
-  final sets = link.targetSets ?? _defaultSetsForIndex(listIndex);
+  final sets = routineExercise.targetSets ?? _defaultSetsForIndex(listIndex);
   int reps = 0;
   if (!isTimer) {
-    final parsed = link.targetReps != null
-        ? _parseRepsFromTarget(link.targetReps!)
+    final parsed = routineExercise.targetReps != null
+        ? _parseRepsFromTarget(routineExercise.targetReps!)
         : null;
     reps = parsed ?? _defaultRepsForIndex(listIndex);
   }
 
-  final restTime = link.restSeconds != null
-      ? Duration(seconds: link.restSeconds!)
+  final restTime = routineExercise.restSeconds != null
+      ? Duration(seconds: routineExercise.restSeconds!)
       : null;
 
   return Exercise(
-    id: storedExercise?.id ?? link.exerciseId,
+    id: storedExercise?.id ?? routineExercise.exerciseId,
     name: name,
     type: isTimer ? ExerciseType.timer : ExerciseType.strength,
     sets: sets,
     reps: reps,
     restTime: restTime,
-    routineExerciseId: link.id,
-    timerTarget: isTimer ? link.timerTarget : null,
+    routineExerciseId: routineExercise.id,
+    timerTarget: isTimer ? routineExercise.timerTarget : null,
   );
 }

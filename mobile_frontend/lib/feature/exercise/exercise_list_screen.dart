@@ -8,10 +8,11 @@ import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise_ui_mapper.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 import 'package:mobile_frontend/feature/routine/routine_last_session_format.dart';
-import 'package:mobile_frontend/feature/routine/screens/add_exercise_screen.dart';
+import 'package:mobile_frontend/feature/exercise/screens/add_exercise_screen.dart';
 import 'package:mobile_frontend/feature/routine/screens/edit_routine_screen.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/data/workout_log_stats.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/exercise_analytics_screen.dart';
+import 'package:mobile_frontend/feature/exercise/widgets/add_exercise_button.dart';
 
 class _ExerciseProgressStyle {
   final Color dotColor;
@@ -74,16 +75,16 @@ _ExerciseProgressStyle _progressFromDeltaPercent(
 }
 
 String _subtitleLine(
-  RoutineExercise link,
+  RoutineExercise routineExercise,
   int designIndex,
   Exercise? exercise,
 ) {
-  final sets = link.targetSets;
-  final reps = link.targetReps?.trim();
+  final sets = routineExercise.targetSets;
+  final reps = routineExercise.targetReps?.trim();
   final isTimer = exercise?.type == 'timer';
 
   if (isTimer) {
-    final dir = TimerRoutineTarget.label(link.timerTarget);
+    final dir = TimerRoutineTarget.label(routineExercise.timerTarget);
     if (sets != null) {
       return '$sets Sets | Timer · $dir';
     }
@@ -216,16 +217,17 @@ class _HeroHeader extends StatelessWidget {
         const SizedBox(height: 16),
         StreamBuilder<List<RoutineExercise>>(
           stream: routineExerciseService.watchForRoutine(routine.id),
-          builder: (context, linkSnap) {
-            final links = linkSnap.data ?? const <RoutineExercise>[];
-            final n = links.length;
+          builder: (context, routineExerciseSnap) {
+            final routineExercises =
+                routineExerciseSnap.data ?? const <RoutineExercise>[];
+            final n = routineExercises.length;
             return StreamBuilder<List<WorkoutLog>>(
               stream: routineExerciseService.watchAllWorkoutLogs(),
               builder: (context, logSnap) {
                 DateTime? last;
-                if (links.isNotEmpty && logSnap.hasData) {
+                if (routineExercises.isNotEmpty && logSnap.hasData) {
                   final map = RoutineExerciseService.lastPerformedByRoutineId(
-                    links: links,
+                    routineExercises: routineExercises,
                     logs: logSnap.data!,
                   );
                   last = map[routine.id];
@@ -287,7 +289,7 @@ class _ExerciseList extends StatelessWidget {
           );
         }
 
-        final links = snapshot.data!;
+        final routineExercises = snapshot.data!;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -315,7 +317,7 @@ class _ExerciseList extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${links.length} Total',
+                        '${routineExercises.length} Total',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -328,7 +330,7 @@ class _ExerciseList extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            if (links.isEmpty)
+            if (routineExercises.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
@@ -339,9 +341,9 @@ class _ExerciseList extends StatelessWidget {
             else
               /// List of exercises for a routine
               FutureBuilder<Map<String, Exercise>>(
-                key: ValueKey(links.map((e) => e.id).join(',')),
+                key: ValueKey(routineExercises.map((e) => e.id).join(',')),
                 future: routineExerciseService.exerciseMapForIds(
-                  links.map((l) => l.exerciseId).toSet(),
+                  routineExercises.map((re) => re.exerciseId).toSet(),
                 ),
                 builder: (context, exSnap) {
                   if (!exSnap.hasData) {
@@ -357,18 +359,18 @@ class _ExerciseList extends StatelessWidget {
                       final logs = logSnap.data ?? const <WorkoutLog>[];
                       return Column(
                         children: [
-                          for (var i = 0; i < links.length; i++)
+                          for (var i = 0; i < routineExercises.length; i++)
                             Padding(
                               padding: const EdgeInsets.only(bottom: 16),
                               child: _ExerciseTile(
-                                exercise: map[links[i].exerciseId],
-                                link: links[i],
+                                exercise: map[routineExercises[i].exerciseId],
+                                routineExercise: routineExercises[i],
                                 listIndex: i,
                                 routineName: routineName,
                                 trainingLoadChangePercent:
-                                    map[links[i].exerciseId]?.type != 'timer'
+                                    map[routineExercises[i].exerciseId]?.type != 'timer'
                                     ? WorkoutLogStats.trainingLoadChangePercentForLatestSession(
-                                        links[i].id,
+                                        routineExercises[i].id,
                                         logs,
                                       )
                                     : null,
@@ -380,7 +382,7 @@ class _ExerciseList extends StatelessWidget {
                   );
                 },
               ),
-            _DashedAddExerciseButton(onPressed: onAddExercise),
+            AddExerciseButton(onTap: onAddExercise),
           ],
         );
       },
@@ -390,14 +392,14 @@ class _ExerciseList extends StatelessWidget {
 
 class _ExerciseTile extends StatelessWidget {
   final Exercise? exercise;
-  final RoutineExercise link;
+  final RoutineExercise routineExercise;
   final int listIndex;
   final String routineName;
   final double? trainingLoadChangePercent;
 
   const _ExerciseTile({
     required this.exercise,
-    required this.link,
+    required this.routineExercise,
     required this.listIndex,
     required this.routineName,
     this.trainingLoadChangePercent,
@@ -408,7 +410,7 @@ class _ExerciseTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final name = exercise?.name ?? 'Unknown exercise';
     final delta = trainingLoadChangePercent;
-    final subtitle = _subtitleLine(link, listIndex, exercise);
+    final subtitle = _subtitleLine(routineExercise, listIndex, exercise);
     final progress = delta != null
         ? _progressFromDeltaPercent(delta, cs.outline)
         : null;
@@ -419,14 +421,14 @@ class _ExerciseTile extends StatelessWidget {
         onTap: () {
           final detailExercise = exerciseForWorkoutDetail(
             exercise,
-            link,
+            routineExercise,
             listIndex,
           );
           Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => ExerciseAnalyticsScreen(
                 exercise: detailExercise,
-                routineLink: link,
+                routineLink: routineExercise,
                 storedExercise: exercise,
                 routineName: routineName,
                 listIndex: listIndex,
@@ -511,88 +513,6 @@ class _ExerciseTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedAddExerciseButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _DashedAddExerciseButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          child: CustomPaint(
-            painter: _DashedBorderPainter(color: cs.surfaceContainerHighest),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_box_outlined, size: 28, color: cs.tertiary),
-                  const SizedBox(height: 8),
-                  Text(
-                    'ADD EXERCISE',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 3,
-                      color: cs.tertiary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  final Color color;
-
-  _DashedBorderPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(1, 1, size.width - 2, size.height - 2);
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    const dash = 6.0;
-    const gap = 4.0;
-
-    void drawDashedLine(Offset from, Offset to) {
-      final total = (to - from).distance;
-      if (total <= 0) return;
-      final dir = (to - from) / total;
-      var d = 0.0;
-      while (d < total) {
-        final end = d + dash > total ? total : d + dash;
-        canvas.drawLine(from + dir * d, from + dir * end, paint);
-        d = end + gap;
-      }
-    }
-
-    drawDashedLine(rect.topLeft, rect.topRight);
-    drawDashedLine(rect.bottomLeft, rect.bottomRight);
-    drawDashedLine(rect.topLeft, rect.bottomLeft);
-    drawDashedLine(rect.topRight, rect.bottomRight);
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color;
 }
 
 class _MetricPill extends StatelessWidget {

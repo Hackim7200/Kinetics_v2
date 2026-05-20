@@ -36,18 +36,18 @@ class RoutineService {
         .watch();
   }
 
-  /// Deletes a routine and cascades through its routine-exercise links,
+  /// Deletes a routine and cascades through its [RoutineExercise] rows,
   /// workout logs, and set entries. Does not delete [Exercise] rows.
   Future<void> deleteRoutine(Routine routine) async {
     await _db.transaction(() async {
-      final links = await (_db.select(_db.routineExercises)
+      final routineExercises = await (_db.select(_db.routineExercises)
             ..where((t) => t.routineId.equals(routine.id)))
           .get();
 
-      for (final link in links) {
-        await _deleteLogsForLink(link.id);
+      for (final routineExercise in routineExercises) {
+        await _deleteLogsForRoutineExercise(routineExercise.id);
         await (_db.delete(_db.routineExercises)
-              ..where((t) => t.id.equals(link.id)))
+              ..where((t) => t.id.equals(routineExercise.id)))
             .go();
       }
 
@@ -56,10 +56,10 @@ class RoutineService {
     });
   }
 
-  /// Deletes all [WorkoutLog] and [SetEntry] rows for a routine-exercise link.
-  Future<void> _deleteLogsForLink(String linkId) async {
+  /// Deletes all [WorkoutLog] and [SetEntry] rows for a [RoutineExercise].
+  Future<void> _deleteLogsForRoutineExercise(String routineExerciseId) async {
     final logs = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.routineExerciseId.equals(linkId)))
+          ..where((l) => l.routineExerciseId.equals(routineExerciseId)))
         .get();
 
     for (final log in logs) {

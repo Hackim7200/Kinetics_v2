@@ -9,7 +9,7 @@ import 'package:mobile_frontend/feature/exercise/exercise_list_screen.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_service.dart';
 import 'package:mobile_frontend/feature/routine/screens/create_routine_screen.dart';
-import 'package:mobile_frontend/feature/routine/widgets/create_routine_card.dart';
+import 'package:mobile_frontend/feature/routine/widgets/create_routine_button.dart';
 import 'package:mobile_frontend/feature/routine/widgets/routine_card.dart';
 
 class RoutineListScreen extends ConsumerStatefulWidget {
@@ -63,32 +63,34 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
                   'Create a routine (e.g. Push Day) and add exercises from the detail screen.',
               actionLabel: 'Create routine',
               onAction: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const CreateRoutineScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const CreateRoutineScreen()),
               ),
             );
           }
 
           return StreamBuilder<List<RoutineExercise>>(
-            stream: _routineExerciseService.watchAllRoutineExerciseLinks(),
-            builder: (context, linkSnap) {
+            stream: _routineExerciseService.watchAllRoutineExercises(),
+            builder: (context, routineExerciseSnap) {
               return StreamBuilder<List<WorkoutLog>>(
                 stream: _routineExerciseService.watchAllWorkoutLogs(),
                 builder: (context, logSnap) {
-                  final links = linkSnap.data ?? const <RoutineExercise>[];
+                  final routineExercises =
+                      routineExerciseSnap.data ?? const <RoutineExercise>[];
                   final logs = logSnap.data ?? const <WorkoutLog>[];
-                  final counts =
-                      RoutineExerciseService.exerciseCountsByRoutineId(links);
+                  final exercisesCountForRoutine =
+                      RoutineExerciseService.exerciseCountsByRoutineId(
+                    routineExercises,
+                  );
                   final lastPerformed =
                       RoutineExerciseService.lastPerformedByRoutineId(
-                        links: links,
+                        routineExercises: routineExercises,
                         logs: logs,
                       );
 
                   return ListView(
                     padding: const EdgeInsets.fromLTRB(24, 16, 24, 120),
                     children: [
+                      // header above the actual list
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -116,23 +118,19 @@ class _RoutineListScreenState extends ConsumerState<RoutineListScreen> {
                       /// Routine list
                       const SizedBox(height: 24),
                       ...routines.map(
-                        (routine) => Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: RoutineCard(
-                            routine: routine,
-                            exerciseCount: counts[routine.id] ?? 0,
-                            lastPerformed: lastPerformed[routine.id],
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ExerciseListScreen(
-                                  routine: routine,
-                                ),
-                              ),
+                        (routine) => RoutineCard(
+                          routine: routine,
+                          exerciseCount: exercisesCountForRoutine[routine.id] ?? 0, // this is the number of exercises in the routine form db
+                          lastPerformed: lastPerformed[routine.id],
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ExerciseListScreen(routine: routine),
                             ),
                           ),
                         ),
                       ),
-                      CreateRoutineCard(
+                      CreateRoutineButton(
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(
                             builder: (_) => const CreateRoutineScreen(),

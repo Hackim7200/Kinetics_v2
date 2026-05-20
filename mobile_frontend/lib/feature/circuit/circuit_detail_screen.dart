@@ -9,6 +9,7 @@ import 'package:mobile_frontend/feature/circuit/screens/add_circuit_exercise_scr
 import 'package:mobile_frontend/feature/circuit/screens/circuit_play_screen.dart';
 import 'package:mobile_frontend/feature/circuit/screens/edit_circuit_exercise_screen.dart';
 import 'package:mobile_frontend/feature/circuit/screens/edit_circuit_screen.dart';
+import 'package:mobile_frontend/feature/exercise/widgets/add_exercise_button.dart';
 
 String _stationSubtitle(int? stationSeconds) {
   final w = stationSeconds;
@@ -317,7 +318,7 @@ class _CircuitExerciseList extends StatelessWidget {
                   );
                 },
               ),
-            _DashedAddCircuitExerciseButton(onPressed: onAddExercise),
+            AddExerciseButton(onTap: onAddExercise),
           ],
         );
       },
@@ -398,88 +399,6 @@ class _CircuitExerciseTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class _DashedAddCircuitExerciseButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _DashedAddCircuitExerciseButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          child: CustomPaint(
-            painter: _DashedBorderPainter(color: cs.surfaceContainerHighest),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add_box_outlined, size: 28, color: cs.tertiary),
-                  const SizedBox(height: 8),
-                  Text(
-                    'ADD EXERCISE',
-                    style: GoogleFonts.inter(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 3,
-                      color: cs.tertiary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  final Color color;
-
-  _DashedBorderPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(1, 1, size.width - 2, size.height - 2);
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..style = PaintingStyle.stroke;
-
-    const dash = 6.0;
-    const gap = 4.0;
-
-    void drawDashedLine(Offset from, Offset to) {
-      final total = (to - from).distance;
-      if (total <= 0) return;
-      final dir = (to - from) / total;
-      var d = 0.0;
-      while (d < total) {
-        final end = d + dash > total ? total : d + dash;
-        canvas.drawLine(from + dir * d, from + dir * end, paint);
-        d = end + gap;
-      }
-    }
-
-    drawDashedLine(rect.topLeft, rect.topRight);
-    drawDashedLine(rect.bottomLeft, rect.bottomRight);
-    drawDashedLine(rect.topLeft, rect.bottomLeft);
-    drawDashedLine(rect.topRight, rect.bottomRight);
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      oldDelegate.color != color;
 }
 
 class _MetricPill extends StatelessWidget {

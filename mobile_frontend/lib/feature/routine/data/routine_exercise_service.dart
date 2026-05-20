@@ -4,14 +4,14 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
-/// Routine ↔ exercise links, exercises, and related workout history (Drift).
+/// Routine exercises, exercise definitions, and related workout history (Drift).
 class RoutineExerciseService {
   RoutineExerciseService(this._db);
 
   final AppDatabase _db;
 
   /// Watches every [RoutineExercise] row (all routines), ordered by routine then slot.
-  Stream<List<RoutineExercise>> watchAllRoutineExerciseLinks() {
+  Stream<List<RoutineExercise>> watchAllRoutineExercises() {
     return (_db.select(_db.routineExercises)
           ..orderBy([
             (t) => OrderingTerm.asc(t.routineId),
@@ -25,16 +25,18 @@ class RoutineExerciseService {
     return _db.select(_db.workoutLogs).watch();
   }
 
-  /// Builds `routineId → latest workout date` from links and logs (pure, no I/O).
+  /// Builds `routineId → latest workout date` from routine exercises and logs (pure, no I/O).
   static Map<String, DateTime> lastPerformedByRoutineId({
-    required List<RoutineExercise> links,
+    required List<RoutineExercise> routineExercises,
     required List<WorkoutLog> logs,
   }) {
-    if (links.isEmpty || logs.isEmpty) return {};
-    final linkIdToRoutineId = {for (final l in links) l.id: l.routineId};
+    if (routineExercises.isEmpty || logs.isEmpty) return {};
+    final routineExerciseIdToRoutineId = {
+      for (final re in routineExercises) re.id: re.routineId,
+    };
     final best = <String, DateTime>{};
     for (final log in logs) {
-      final routineId = linkIdToRoutineId[log.routineExerciseId];
+      final routineId = routineExerciseIdToRoutineId[log.routineExerciseId];
       if (routineId == null) continue;
       final at = log.date.toUtc();
       best.update(
@@ -46,13 +48,17 @@ class RoutineExerciseService {
     return best;
   }
 
-  /// Builds `routineId → number of exercises` from link rows (pure, no I/O).
+  /// Builds `routineId → number of exercises` from [RoutineExercise] rows (pure, no I/O).
   static Map<String, int> exerciseCountsByRoutineId(
-    List<RoutineExercise> links,
+    List<RoutineExercise> routineExercises,
   ) {
     final map = <String, int>{};
-    for (final link in links) {
-      map.update(link.routineId, (c) => c + 1, ifAbsent: () => 1);
+    for (final routineExercise in routineExercises) {
+      map.update(
+        routineExercise.routineId,
+        (c) => c + 1,
+        ifAbsent: () => 1,
+      );
     }
     return map;
   }
@@ -66,7 +72,7 @@ class RoutineExerciseService {
   }
 
   /// One-shot fetch of ordered [RoutineExercise] rows for a routine.
-  Future<List<RoutineExercise>> linksForRoutine(String routineId) {
+  Future<List<RoutineExercise>> routineExercisesForRoutine(String routineId) {
     return (_db.select(_db.routineExercises)
           ..where((t) => t.routineId.equals(routineId))
           ..orderBy([(t) => OrderingTerm.asc(t.orderIndex)]))
@@ -93,8 +99,10 @@ class RoutineExerciseService {
     int? restSeconds,
     String? timerTarget,
   }) async {
-    final links = await linksForRoutine(routineId);
-    final nextOrder = links.isEmpty ? 0 : links.last.orderIndex + 1;
+    final routineExercises = await routineExercisesForRoutine(routineId);
+    final nextOrder = routineExercises.isEmpty
+        ? 0
+        : routineExercises.last.orderIndex + 1;
 
     final trimmedMuscle = muscleGroup?.trim();
     final exerciseId = _uuid.v4();
@@ -124,16 +132,17 @@ class RoutineExerciseService {
         );
   }
 
-  /// Removes only the [RoutineExercise] link; leaves [Exercise] and logs intact.
-  Future<void> removeLink(RoutineExercise link) async {
-    await (_db.delete(_db.routineExercises)..where((t) => t.id.equals(link.id)))
+  /// Removes only the [RoutineExercise] row; leaves [Exercise] and logs intact.
+  Future<void> removeRoutineExercise(RoutineExercise routineExercise) async {
+    await (_db.delete(_db.routineExercises)
+          ..where((t) => t.id.equals(routineExercise.id)))
         .go();
   }
 
   /// Updates [Exercise] name/type and [RoutineExercise] targets for a slot.
   Future<void> updateExerciseInRoutine({
     required Exercise exercise,
-    required RoutineExercise link,
+    required RoutineExercise routineExercise,
     required String name,
     required String type,
     int? targetSets,
@@ -156,7 +165,8 @@ class RoutineExerciseService {
 
     final timerTargetForStore = type == 'timer' ? timerTarget : null;
 
-    await (_db.update(_db.routineExercises)..where((t) => t.id.equals(link.id)))
+    await (_db.update(_db.routineExercises)
+          ..where((t) => t.id.equals(routineExercise.id)))
         .write(
       RoutineExercisesCompanion(
         targetSets: Value(targetSets),
@@ -166,14 +176,14 @@ class RoutineExerciseService {
     );
   }
 
-  /// Deletes the link, its workout logs/set entries, and the [Exercise] row.
+  /// Deletes the [RoutineExercise], its workout logs/set entries, and the [Exercise] row.
   Future<void> deleteExerciseEntry({
-    required RoutineExercise link,
+    required RoutineExercise routineExercise,
     required Exercise exercise,
   }) async {
     await _db.transaction(() async {
       final logs = await (_db.select(_db.workoutLogs)
-            ..where((l) => l.routineExerciseId.equals(link.id)))
+            ..where((l) => l.routineExerciseId.equals(routineExercise.id)))
           .get();
 
       for (final log in logs) {
@@ -185,7 +195,7 @@ class RoutineExerciseService {
       }
 
       await (_db.delete(_db.routineExercises)
-            ..where((t) => t.id.equals(link.id)))
+            ..where((t) => t.id.equals(routineExercise.id)))
           .go();
       await (_db.delete(_db.exercises)..where((e) => e.id.equals(exercise.id)))
           .go();

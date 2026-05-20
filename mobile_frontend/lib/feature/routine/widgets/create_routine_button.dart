@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class CreateRoutineCard extends StatelessWidget {
+class CreateRoutineButton extends StatelessWidget {
   final VoidCallback? onTap;
 
-  const CreateRoutineCard({super.key, this.onTap});
+  const CreateRoutineButton({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -24,11 +24,7 @@ class CreateRoutineCard extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add,
-              size: 32,
-              color: cs.outlineVariant,
-            ),
+            Icon(Icons.add, size: 32, color: cs.outlineVariant),
             const SizedBox(height: 16),
             Text(
               'CREATE NEW ROUTINE',

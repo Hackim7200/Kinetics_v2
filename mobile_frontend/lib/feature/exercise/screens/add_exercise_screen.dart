@@ -1,69 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
-import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
-import 'package:mobile_frontend/feature/exercise/widgets/exercise_type_selector.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
+import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 
-class AddExerciseScreen extends StatefulWidget {
-  const AddExerciseScreen({super.key});
+/// Full-screen form to add an exercise to a routine (matches [CreateRoutineScreen] layout).
+class AddExerciseScreen extends ConsumerStatefulWidget {
+  final String routineId;
+  final String? routineName;
+
+  const AddExerciseScreen({
+    super.key,
+    required this.routineId,
+    this.routineName,
+  });
 
   @override
-  State<AddExerciseScreen> createState() => _AddExerciseScreenState();
+  ConsumerState<AddExerciseScreen> createState() => _AddExerciseScreenState();
 }
 
-class _AddExerciseScreenState extends State<AddExerciseScreen> {
-  ExerciseType _selectedType = ExerciseType.strength;
+class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
   final _nameController = TextEditingController();
   final _setsController = TextEditingController();
   final _repsController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _durationController = TextEditingController();
+  late final RoutineExerciseService _routineExerciseService;
 
-  void _trySubmit() {
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter an exercise name.')),
-      );
-      return;
-    }
-    if (_selectedType == ExerciseType.strength) {
-      final err = TrainingTargetInput.validateStrengthTargets(
-        setsRaw: _setsController.text,
-        repsRaw: _repsController.text,
-      );
-      if (err != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-        return;
-      }
-    }
-    if (_selectedType == ExerciseType.timer) {
-      final err = TrainingTargetInput.validateTargetSetsOnly(
-        setsRaw: _setsController.text,
-      );
-      if (err != null) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
-        return;
-      }
-    }
-    Navigator.of(context).pop();
+  @override
+  void initState() {
+    super.initState();
+    _routineExerciseService = RoutineExerciseService(ref.read(appDatabaseProvider));
   }
+  String _type = 'strength';
+  String _timerTarget = TimerRoutineTarget.increase;
+  bool _saving = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _setsController.dispose();
     _repsController.dispose();
-    _weightController.dispose();
-    _durationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) return;
+
+    if (_type == 'strength') {
+      final err = TrainingTargetInput.validateStrengthTargets(
+        setsRaw: _setsController.text,
+        repsRaw: _repsController.text,
+      );
+      if (err != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(err)));
+        }
+        return;
+      }
+    }
+    if (_type == 'timer') {
+      final err = TrainingTargetInput.validateTargetSetsOnly(
+        setsRaw: _setsController.text,
+      );
+      if (err != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(err)));
+        }
+        return;
+      }
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      await _routineExerciseService.addExerciseToRoutine(
+        routineId: widget.routineId,
+        name: name,
+        type: _type,
+        targetSets: _type == 'strength' || _type == 'timer'
+            ? int.parse(_setsController.text.trim())
+            : null,
+        targetReps: _type == 'strength' ? _repsController.text.trim() : null,
+        timerTarget: _type == 'timer' ? _timerTarget : null,
+      );
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to add exercise: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final routineLabel = widget.routineName?.trim();
 
     return Scaffold(
       appBar: KineticAppBar(
@@ -71,14 +114,14 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
         showBackButton: true,
         actions: [
           GestureDetector(
-            onTap: _trySubmit,
+            onTap: _saving ? null : _save,
             child: Text(
               'SAVE',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2,
-                color: cs.primary,
+                color: _saving ? cs.outline : cs.primary,
               ),
             ),
           ),
@@ -98,7 +141,7 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'NEW EXERCISE',
+            'EXERCISE',
             style: GoogleFonts.inter(
               fontSize: 36,
               fontWeight: FontWeight.w900,
@@ -107,136 +150,181 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
               color: cs.onSurface,
             ),
           ),
-          const SizedBox(height: 40),
-
-          // Exercise Name
+          if (routineLabel != null && routineLabel.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              routineLabel.toUpperCase(),
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2,
+                color: cs.outline,
+              ),
+            ),
+          ],
+          const SizedBox(height: 48),
           _buildField('EXERCISE NAME', 'e.g. Bench Press', _nameController),
           const SizedBox(height: 32),
-
-          // Exercise Type Selector
-          Text(
-            'EXERCISE TYPE',
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 2,
-              color: cs.tertiary,
+          _buildTypeSelector(cs),
+          if (_type == 'strength') ...[
+            const SizedBox(height: 32),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _buildField(
+                    'TARGET SETS',
+                    '1-${TrainingTargetInput.maxSets}',
+                    _setsController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: TrainingTargetInput.setsFieldFormatters,
+                  ),
+                ),
+                const SizedBox(width: 24),
+                Expanded(
+                  child: _buildField(
+                    'TARGET REPS',
+                    '1-${TrainingTargetInput.maxReps}',
+                    _repsController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: TrainingTargetInput.repsFieldFormatters,
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (_type == 'timer') ...[
+            const SizedBox(height: 32),
+            _buildField(
+              'TARGET SETS',
+              '1-${TrainingTargetInput.maxSets}',
+              _setsController,
+              keyboardType: TextInputType.number,
+              inputFormatters: TrainingTargetInput.setsFieldFormatters,
+            ),
+            const SizedBox(height: 32),
+            _buildTimerTargetSelector(cs),
+          ],
+          const SizedBox(height: 48),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [cs.primary, cs.primaryContainer],
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _saving ? null : _save,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: _saving
+                        ? SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: cs.onPrimary,
+                            ),
+                          )
+                        : Text(
+                            'ADD EXERCISE',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 3,
+                              color: cs.onPrimary,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          ExerciseTypeSelector(
-            selectedType: _selectedType,
-            onChanged: (type) => setState(() => _selectedType = type),
-          ),
-          const SizedBox(height: 32),
-
-          // Dynamic fields based on type
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            child: _selectedType == ExerciseType.strength
-                ? _buildStrengthFields()
-                : _buildTimerFields(),
-          ),
-          const SizedBox(height: 48),
-
-          // Save Button
-          _buildSaveButton(cs),
         ],
       ),
     );
   }
 
-  Widget _buildStrengthFields() {
+  Widget _buildTimerTargetSelector(ColorScheme cs) {
     return Column(
-      key: const ValueKey('strength'),
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'TARGET',
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2,
+            color: cs.tertiary,
+          ),
+        ),
+        const SizedBox(height: 12),
         Row(
           children: [
             Expanded(
-              child: _buildField(
-                'SETS',
-                '1-${TrainingTargetInput.maxSets}',
-                _setsController,
-                keyboardType: TextInputType.number,
-                inputFormatters: TrainingTargetInput.setsFieldFormatters,
+              child: _TypeOption(
+                label: 'Increase',
+                selected: _timerTarget == TimerRoutineTarget.increase,
+                onTap: () =>
+                    setState(() => _timerTarget = TimerRoutineTarget.increase),
               ),
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: _buildField(
-                'REPS',
-                '1-${TrainingTargetInput.maxReps}',
-                _repsController,
-                keyboardType: TextInputType.number,
-                inputFormatters: TrainingTargetInput.repsFieldFormatters,
+              child: _TypeOption(
+                label: 'Decrease',
+                selected: _timerTarget == TimerRoutineTarget.decrease,
+                onTap: () =>
+                    setState(() => _timerTarget = TimerRoutineTarget.decrease),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 32),
-        _buildField(
-          'WEIGHT (KG)',
-          'e.g. 100',
-          _weightController,
-          keyboardType: TextInputType.number,
-        ),
       ],
     );
   }
 
-  Widget _buildTimerFields() {
+  Widget _buildTypeSelector(ColorScheme cs) {
     return Column(
-      key: const ValueKey('timer'),
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildField(
-          'DURATION (SEC)',
-          'e.g. 60',
-          _durationController,
-          keyboardType: TextInputType.number,
-        ),
-        const SizedBox(height: 32),
-        _buildField(
-          'SETS',
-          '1-${TrainingTargetInput.maxSets}',
-          _setsController,
-          keyboardType: TextInputType.number,
-          inputFormatters: TrainingTargetInput.setsFieldFormatters,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSaveButton(ColorScheme cs) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [cs.primary, cs.primaryContainer],
-        ),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: _trySubmit,
-          borderRadius: BorderRadius.circular(4),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Center(
-              child: Text(
-                'ADD EXERCISE',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 3,
-                  color: cs.onPrimary,
-                ),
-              ),
-            ),
+        Text(
+          'TYPE',
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2,
+            color: cs.tertiary,
           ),
         ),
-      ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _TypeOption(
+                label: 'Strength',
+                selected: _type == 'strength',
+                onTap: () => setState(() => _type = 'strength'),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _TypeOption(
+                label: 'Timer',
+                selected: _type == 'timer',
+                onTap: () => setState(() => _type = 'timer'),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -294,6 +382,55 @@ class _AddExerciseScreenState extends State<AddExerciseScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TypeOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _TypeOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: selected
+                    ? cs.primary
+                    : cs.outlineVariant.withValues(alpha: 0.3),
+                width: selected ? 2 : 1,
+              ),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Center(
+              child: Text(
+                label.toUpperCase(),
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5,
+                  color: selected ? cs.onSurface : cs.outline,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
