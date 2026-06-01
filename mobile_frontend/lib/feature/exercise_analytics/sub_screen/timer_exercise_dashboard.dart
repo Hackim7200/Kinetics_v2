@@ -56,7 +56,7 @@ class _TimerExerciseDashboardState
 
   Duration? get _personalBestDuration {
     int? bestSec = _maxHoldSecondsLast30Days;
-    final todayMax = maxDurationSecondsInSession(_sets);
+    final todayMax = maxTimeElapsedInSession(_sets);
     if (todayMax != null &&
         todayMax > 0 &&
         (bestSec == null || todayMax > bestSec)) {
@@ -66,7 +66,7 @@ class _TimerExerciseDashboardState
       return Duration(seconds: bestSec);
     }
     for (final w in _historySessions) {
-      final m = maxDurationSecondsInSession(w.sets);
+      final m = maxTimeElapsedInSession(w.sets);
       if (m != null && m > 0 && (bestSec == null || m > bestSec)) bestSec = m;
     }
     if (bestSec == null || bestSec < 1) return null;
@@ -81,16 +81,13 @@ class _TimerExerciseDashboardState
   }
 
   String get _sessionTotalChangeDisplay {
-    if (_historySessions.isEmpty) return '—';
-    final last = _historySessions.last;
-    final saved = last.trainingLoadChangePercent;
-    if (saved != null) {
-      final sign = saved > 0 ? '+' : '';
-      return '$sign${saved.toStringAsFixed(1)}';
-    }
     if (_historySessions.length < 2) return '—';
     final totals = _historySessions
-        .map((w) => totalDurationSecondsForSets(w.sets).toDouble())
+        .map(
+          (w) =>
+              w.totalTrainingLoad ??
+              totalTimeElapsedForSets(w.sets).toDouble(),
+        )
         .toList();
     final prev = totals[totals.length - 2];
     final cur = totals[totals.length - 1];
@@ -140,7 +137,7 @@ class _TimerExerciseDashboardState
         _historySessions = sessions;
         _maxHoldSecondsLast30Days = maxHold;
         _sessionTotalSecondsSeries = graphSlice
-            .map((w) => totalDurationSecondsForSets(w.sets).toDouble())
+            .map((w) => totalTimeElapsedForSets(w.sets).toDouble())
             .toList();
         _graphXLabels = graphSlice
             .map((w) => '${w.date.month}/${w.date.day}')
@@ -165,7 +162,7 @@ class _TimerExerciseDashboardState
               _sets.length == 1 &&
               _sets.single.setNumber == 1 &&
               _sets.single.datastoreId == null &&
-              _sets.single.durationSeconds == null;
+              _sets.single.timeElapsed == null;
           if (stillPristineFirstRow) {
             _sets = loaded;
           }
@@ -224,7 +221,7 @@ class _TimerExerciseDashboardState
 
     final index = _sets.length - 1;
     final entry = _sets[index].copyWith(
-      durationSeconds: duration.inSeconds,
+      timeElapsed: duration.inSeconds,
       isCompleted: true,
     );
 

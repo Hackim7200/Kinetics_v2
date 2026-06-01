@@ -47,7 +47,7 @@ class _AddCircuitExerciseScreenState
     try {
       await _circuitExerciseService.addExerciseToCircuit(
         circuitId: widget.circuitId,
-        name: name,
+        title: name,
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

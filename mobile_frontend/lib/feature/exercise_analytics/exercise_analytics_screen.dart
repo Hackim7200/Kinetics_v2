@@ -17,7 +17,6 @@ class ExerciseAnalyticsScreen extends ConsumerStatefulWidget {
 
   /// Routine link when opened from a routine (enables edit/delete on workout page).
   final drift.RoutineExercise? routineLink;
-  final drift.Exercise? storedExercise;
   final String? routineName;
 
   /// Passed through [exerciseForWorkoutDetail] when refreshing after edit.
@@ -27,7 +26,6 @@ class ExerciseAnalyticsScreen extends ConsumerStatefulWidget {
     super.key,
     required this.exercise,
     this.routineLink,
-    this.storedExercise,
     this.routineName,
     this.listIndex = 0,
   });
@@ -43,8 +41,7 @@ class _ExerciseAnalyticsScreenState
   late Exercise _exercise;
   int _techniqueNotesRefreshToken = 0;
 
-  bool get _canEditFromRoutine =>
-      widget.routineLink != null && widget.storedExercise != null;
+  bool get _canEditFromRoutine => widget.routineLink != null;
 
   @override
   void initState() {
@@ -56,7 +53,8 @@ class _ExerciseAnalyticsScreenState
   }
 
   Future<void> _onTechniqueNotesPressed() async {
-    final ok = await showTechniqueNotesEditor(context, _exercise.id);
+    final id = widget.routineLink?.id ?? _exercise.id;
+    final ok = await showTechniqueNotesEditor(context, id);
     if (ok && mounted) {
       setState(() => _techniqueNotesRefreshToken++);
     }
@@ -64,8 +62,7 @@ class _ExerciseAnalyticsScreenState
 
   Future<void> _refreshExerciseFromStore() async {
     final link = widget.routineLink;
-    final stored = widget.storedExercise;
-    if (link == null || stored == null) return;
+    if (link == null) return;
 
     try {
       final routineExercises = await _routineExerciseService
@@ -73,17 +70,9 @@ class _ExerciseAnalyticsScreenState
       final linkRow = routineExercises
           .where((re) => re.id == link.id)
           .firstOrNull;
-      final exercises = await _routineExerciseService.exerciseMapForIds({
-        stored.id,
-      });
-      final exerciseRow = exercises[stored.id];
-      if (!mounted || linkRow == null || exerciseRow == null) return;
+      if (!mounted || linkRow == null) return;
       setState(() {
-        _exercise = exerciseForWorkoutDetail(
-          exerciseRow,
-          linkRow,
-          widget.listIndex,
-        );
+        _exercise = exerciseForWorkoutDetail(linkRow, widget.listIndex);
       });
     } catch (_) {
       // Keep current session UI if refresh fails.
@@ -96,7 +85,6 @@ class _ExerciseAnalyticsScreenState
       MaterialPageRoute<String>(
         builder: (_) => EditExerciseScreen(
           routineExercise: widget.routineLink!,
-          exercise: widget.storedExercise!,
           routineName: widget.routineName,
         ),
       ),
@@ -116,9 +104,9 @@ class _ExerciseAnalyticsScreenState
     final exercise = _exercise;
     final cs = Theme.of(context).colorScheme;
 
-    final actions = <Widget>[];
+    final appBarActionsList = <Widget>[];
     if (_canEditFromRoutine) {
-      actions.add(
+      appBarActionsList.add(
         IconButton(
           tooltip: 'Edit exercise',
           onPressed: _openEditExercise,
@@ -127,7 +115,7 @@ class _ExerciseAnalyticsScreenState
       );
     }
     if (exercise.isStrength || exercise.isTimer) {
-      actions.add(
+      appBarActionsList.add(
         IconButton(
           tooltip: 'Technique notes',
           onPressed: _onTechniqueNotesPressed,
@@ -139,7 +127,7 @@ class _ExerciseAnalyticsScreenState
     return Scaffold(
       appBar: KineticAppBar(
         showBackButton: true,
-        actions: actions.isEmpty ? null : actions,
+        actions: appBarActionsList.isEmpty ? null : appBarActionsList,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),
@@ -171,6 +159,7 @@ class _ExerciseAnalyticsScreenState
               ],
             ),
           ),
+
           const SizedBox(height: 32),
           if (exercise.isStrength)
             WeightExerciseDashboard(

@@ -31,7 +31,7 @@ class WorkoutDetailTimerHistoryTable extends StatelessWidget {
   }
 
   static String _durationCell(SetEntry? e) {
-    final d = e?.durationSeconds;
+    final d = e?.timeElapsed;
     if (d == null || d <= 0) return '—';
     return formatTimerMinutesSeconds(Duration(seconds: d));
   }

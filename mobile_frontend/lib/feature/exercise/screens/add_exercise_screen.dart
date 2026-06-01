@@ -87,7 +87,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     try {
       await _routineExerciseService.addExerciseToRoutine(
         routineId: widget.routineId,
-        name: name,
+        title: name,
         type: _type,
         targetSets: _type == 'strength' || _type == 'timer'
             ? int.parse(_setsController.text.trim())

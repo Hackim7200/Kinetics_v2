@@ -6,11 +6,10 @@ class SetEntries extends Table {
   TextColumn get id => text()();
   TextColumn get workoutLogId => text().references(WorkoutLogs, #id)();
   IntColumn get setNumber => integer()();
-  RealColumn get weight => real().nullable()();
   IntColumn get reps => integer().nullable()();
+  IntColumn get timeElapsed => integer().nullable()();
+  RealColumn get weight => real().nullable()();
   RealColumn get trainingLoad => real().nullable()();
-  IntColumn get durationSeconds => integer().nullable()();
-  BoolColumn get isCompleted => boolean().nullable()();
 
   @override
   Set<Column<Object>> get primaryKey => {id};

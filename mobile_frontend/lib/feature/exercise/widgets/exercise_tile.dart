@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
 import 'package:mobile_frontend/database/database.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise_ui_mapper.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/exercise_analytics_screen.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/exercise_analytics_screen2.dart';
 
 class _ExerciseProgressStyle {
   final Color dotColor;
@@ -65,14 +65,10 @@ _ExerciseProgressStyle _progressFromDeltaPercent(
   );
 }
 
-String _subtitleLine(
-  RoutineExercise routineExercise,
-  int designIndex,
-  Exercise? exercise,
-) {
+String _subtitleLine(RoutineExercise routineExercise, int designIndex) {
   final sets = routineExercise.targetSets;
   final reps = routineExercise.targetReps?.trim();
-  final isTimer = exercise?.type == 'timer';
+  final isTimer = routineExercise.type == 'timer';
 
   if (isTimer) {
     final dir = TimerRoutineTarget.label(routineExercise.timerTarget);
@@ -99,7 +95,6 @@ String _subtitleLine(
 }
 
 class ExerciseTile extends StatelessWidget {
-  final Exercise? exercise;
   final RoutineExercise routineExercise;
   final int listIndex;
   final String routineName;
@@ -107,7 +102,6 @@ class ExerciseTile extends StatelessWidget {
 
   const ExerciseTile({
     super.key,
-    required this.exercise,
     required this.routineExercise,
     required this.listIndex,
     required this.routineName,
@@ -117,9 +111,9 @@ class ExerciseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appTheme = Theme.of(context).colorScheme;
-    final name = exercise?.name ?? 'Unknown exercise';
+    final name = routineExercise.title;
     final delta = trainingLoadChangePercent;
-    final subtitle = _subtitleLine(routineExercise, listIndex, exercise);
+    final subtitle = _subtitleLine(routineExercise, listIndex);
     final progress = delta != null
         ? _progressFromDeltaPercent(delta, appTheme.outline)
         : null;
@@ -129,19 +123,12 @@ class ExerciseTile extends StatelessWidget {
       child: InkWell(
         onTap: () {
           final detailExercise = exerciseForWorkoutDetail(
-            exercise,
             routineExercise,
             listIndex,
           );
           Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => ExerciseAnalyticsScreen(
-                exercise: detailExercise,
-                routineLink: routineExercise,
-                storedExercise: exercise,
-                routineName: routineName,
-                listIndex: listIndex,
-              ),
+              builder: (_) => ExerciseAnalyticsScreen2(exercise: detailExercise),
             ),
           );
         },

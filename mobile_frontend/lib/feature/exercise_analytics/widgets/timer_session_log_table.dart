@@ -6,7 +6,7 @@ import 'package:mobile_frontend/feature/exercise_analytics/widgets/timer_add_tim
 const double _timerSetColWidth = 48;
 
 bool timerSetHasDuration(SetEntry s) =>
-    s.durationSeconds != null && s.durationSeconds! > 0;
+    s.timeElapsed != null && s.timeElapsed! > 0;
 
 /// Each index `1..maxSets` has exactly one row with a logged duration.
 bool timerSessionLooksComplete(List<SetEntry> sets, int maxSets) {
@@ -186,7 +186,7 @@ class _TimerLogSetRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final d = entry.durationSeconds;
+    final d = entry.timeElapsed;
     final hasD = d != null && d > 0;
     final text = hasD
         ? formatTimerMinutesSeconds(Duration(seconds: d))

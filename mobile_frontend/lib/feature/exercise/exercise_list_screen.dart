@@ -43,7 +43,7 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
       MaterialPageRoute<void>(
         builder: (_) => AddExerciseScreen(
           routineId: _routine.id,
-          routineName: _routine.name,
+          routineName: _routine.title,
         ),
       ),
     );
@@ -76,7 +76,7 @@ class _ExerciseListScreenState extends ConsumerState<ExerciseListScreen> {
           const SizedBox(height: 40),
           ExerciseList(
             routineId: _routine.id,
-            routineName: _routine.name,
+            routineName: _routine.title,
             routineExerciseService: _routineExerciseService,
             onAddExercise: _addExercise,
           ),

@@ -8,13 +8,11 @@ import 'package:mobile_frontend/feature/circuit/data/circuit_exercise_service.da
 
 class EditCircuitExerciseScreen extends ConsumerStatefulWidget {
   final CircuitExercise link;
-  final Exercise exercise;
   final String? circuitName;
 
   const EditCircuitExerciseScreen({
     super.key,
     required this.link,
-    required this.exercise,
     this.circuitName,
   });
 
@@ -34,7 +32,7 @@ class _EditCircuitExerciseScreenState
   void initState() {
     super.initState();
     _circuitExerciseService = CircuitExerciseService(ref.read(appDatabaseProvider));
-    _nameController = TextEditingController(text: widget.exercise.name);
+    _nameController = TextEditingController(text: widget.link.title);
   }
 
   @override
@@ -51,8 +49,8 @@ class _EditCircuitExerciseScreenState
 
     try {
       await _circuitExerciseService.updateExerciseInCircuit(
-        exercise: widget.exercise,
-        name: name,
+        link: widget.link,
+        title: name,
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -72,7 +70,7 @@ class _EditCircuitExerciseScreenState
       builder: (ctx) => AlertDialog(
         title: const Text('Remove Exercise'),
         content: Text(
-          'Remove "${widget.exercise.name}" from this circuit?',
+          'Remove "${widget.link.title}" from this circuit?',
         ),
         actions: [
           TextButton(
@@ -91,10 +89,7 @@ class _EditCircuitExerciseScreenState
 
     setState(() => _deleting = true);
     try {
-      await _circuitExerciseService.deleteExerciseEntry(
-        link: widget.link,
-        exercise: widget.exercise,
-      );
+      await _circuitExerciseService.deleteExerciseEntry(widget.link);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {

@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
-/// Circuit ↔ exercise links and circuit-specific exercises (Drift).
+/// Circuit station rows (Drift).
 class CircuitExerciseService {
   CircuitExerciseService(this._db);
 
@@ -43,35 +43,18 @@ class CircuitExerciseService {
         .get();
   }
 
-  Future<Map<String, Exercise>> exerciseMapForIds(Set<String> ids) async {
-    if (ids.isEmpty) return {};
-    final rows = await (_db.select(_db.exercises)
-          ..where((e) => e.id.isIn(ids)))
-        .get();
-    return {for (final e in rows) e.id: e};
-  }
-
   Future<void> addExerciseToCircuit({
     required String circuitId,
-    required String name,
+    required String title,
   }) async {
     final links = await linksForCircuit(circuitId);
     final nextOrder = links.isEmpty ? 0 : links.last.orderIndex + 1;
-    final exerciseId = _uuid.v4();
-
-    await _db.into(_db.exercises).insert(
-          ExercisesCompanion.insert(
-            id: exerciseId,
-            name: name.trim(),
-            type: 'timer',
-          ),
-        );
 
     await _db.into(_db.circuitExercises).insert(
           CircuitExercisesCompanion.insert(
             id: _uuid.v4(),
             circuitId: circuitId,
-            exerciseId: exerciseId,
+            title: title.trim(),
             orderIndex: nextOrder,
           ),
         );
@@ -83,24 +66,17 @@ class CircuitExerciseService {
   }
 
   Future<void> updateExerciseInCircuit({
-    required Exercise exercise,
-    required String name,
+    required CircuitExercise link,
+    required String title,
   }) async {
-    await (_db.update(_db.exercises)..where((e) => e.id.equals(exercise.id))).write(
-      ExercisesCompanion(name: Value(name.trim())),
+    await (_db.update(_db.circuitExercises)..where((t) => t.id.equals(link.id)))
+        .write(
+      CircuitExercisesCompanion(title: Value(title.trim())),
     );
   }
 
-  Future<void> deleteExerciseEntry({
-    required CircuitExercise link,
-    required Exercise exercise,
-  }) async {
-    await _db.transaction(() async {
-      await (_db.delete(_db.circuitExercises)
-            ..where((t) => t.id.equals(link.id)))
-          .go();
-      await (_db.delete(_db.exercises)..where((e) => e.id.equals(exercise.id)))
-          .go();
-    });
+  Future<void> deleteExerciseEntry(CircuitExercise link) async {
+    await (_db.delete(_db.circuitExercises)..where((t) => t.id.equals(link.id)))
+        .go();
   }
 }

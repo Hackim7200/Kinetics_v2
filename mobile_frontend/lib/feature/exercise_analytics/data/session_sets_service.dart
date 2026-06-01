@@ -18,7 +18,7 @@ class WorkoutTrainingLoadPoint {
 }
 
 /// Loads and saves workout [session.SetEntry] rows in Drift for the current
-/// calendar day, scoped by [RoutineExercise] via [WorkoutLog.routineExerciseId].
+/// calendar day, scoped by [RoutineExercise] via [WorkoutLog.exerciseId].
 class SessionSetsService {
   SessionSetsService(this._db);
 
@@ -30,7 +30,7 @@ class SessionSetsService {
 
   Future<drift.WorkoutLog?> _findTodaysLog(String routineExerciseId) async {
     final logs = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.routineExerciseId.equals(routineExerciseId)))
+          ..where((l) => l.exerciseId.equals(routineExerciseId)))
         .get();
     final nowLocal = DateTime.now();
     drift.WorkoutLog? best;
@@ -51,13 +51,13 @@ class SessionSetsService {
 
     final log = drift.WorkoutLog(
       id: _uuid.v4(),
-      routineExerciseId: routineExerciseId,
+      exerciseId: routineExerciseId,
       date: DateTime.now().toUtc(),
     );
     await _db.into(_db.workoutLogs).insert(
           drift.WorkoutLogsCompanion.insert(
             id: log.id,
-            routineExerciseId: routineExerciseId,
+            exerciseId: routineExerciseId,
             date: log.date,
           ),
         );
@@ -79,18 +79,12 @@ class SessionSetsService {
       setNumber: row.setNumber,
       weight: row.weight,
       reps: row.reps,
-      isCompleted: row.isCompleted ?? false,
+      isCompleted: load != null ||
+          (row.timeElapsed != null && row.timeElapsed! > 0),
       trainingLoad: load,
-      durationSeconds: row.durationSeconds,
+      timeElapsed: row.timeElapsed,
       datastoreId: row.id,
     );
-  }
-
-  Future<double> _resolvedTotalTrainingLoadForLog(drift.WorkoutLog log) async {
-    final stored = log.totalTrainingLoad;
-    if (stored != null) return stored;
-    final sets = await loadSets(log.id);
-    return session.aggregateMetricForWorkoutLogSets(sets);
   }
 
   static double? trainingLoadChangePercentVsPrevious(
@@ -102,13 +96,14 @@ class SessionSetsService {
         previousTotal,
       );
 
-  static double? trainingLoadChangePercentForLatestSession(
+  Future<double?> trainingLoadChangePercentForLatestSession(
     String routineExerciseId,
     List<drift.WorkoutLog> allLogs,
   ) =>
       WorkoutLogStats.trainingLoadChangePercentForLatestSession(
         routineExerciseId,
         allLogs,
+        loadSets,
       );
 
   Future<void> saveWorkoutLogTotalTrainingLoad(
@@ -116,34 +111,9 @@ class SessionSetsService {
     List<session.SetEntry> sets,
   ) async {
     final total = session.aggregateMetricForWorkoutLogSets(sets);
-    final rows = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.id.equals(workoutLogId)))
-        .get();
-    if (rows.isEmpty) return;
-    final current = rows.first;
-
-    final siblings = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.routineExerciseId.equals(current.routineExerciseId))
-          ..orderBy([(l) => OrderingTerm.asc(l.date)]))
-        .get();
-    final idx = siblings.indexWhere((l) => l.id == workoutLogId);
-
-    double? changePercent;
-    if (idx > 0) {
-      final previousTotal =
-          await _resolvedTotalTrainingLoadForLog(siblings[idx - 1]);
-      changePercent =
-          trainingLoadChangePercentVsPrevious(total, previousTotal);
-    }
-
     await (_db.update(_db.workoutLogs)..where((l) => l.id.equals(workoutLogId)))
         .write(
-      drift.WorkoutLogsCompanion(
-        totalTrainingLoad: Value(total),
-        trainingLoadChangePercent: changePercent != null
-            ? Value(changePercent)
-            : const Value.absent(),
-      ),
+      drift.WorkoutLogsCompanion(totalTrainingLoad: Value(total)),
     );
   }
 
@@ -162,11 +132,9 @@ class SessionSetsService {
             weight: Value(entry.weight),
             reps: Value(entry.reps),
             trainingLoad: Value(load),
-            durationSeconds: Value(entry.durationSeconds),
-            isCompleted: Value(entry.isCompleted),
+            timeElapsed: Value(entry.timeElapsed),
           ),
         );
-
     return entry.copyWith(datastoreId: id, trainingLoad: load);
   }
 
@@ -182,7 +150,8 @@ class SessionSetsService {
         .map(
           (w) => WorkoutTrainingLoadPoint(
             date: w.date,
-            totalTrainingLoad: session.totalTrainingLoadForSets(w.sets),
+            totalTrainingLoad:
+                w.totalTrainingLoad ?? session.totalTrainingLoadForSets(w.sets),
           ),
         )
         .toList();
@@ -193,7 +162,7 @@ class SessionSetsService {
     int limit = 20,
   }) async {
     final logs = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.routineExerciseId.equals(routineExerciseId))
+          ..where((l) => l.exerciseId.equals(routineExerciseId))
           ..orderBy([(l) => OrderingTerm.desc(l.date)]))
         .get();
     if (logs.isEmpty) return [];
@@ -211,7 +180,6 @@ class SessionSetsService {
           date: log.date.toLocal(),
           sets: sets,
           totalTrainingLoad: log.totalTrainingLoad,
-          trainingLoadChangePercent: log.trainingLoadChangePercent,
         ),
       );
     }
@@ -223,7 +191,7 @@ class SessionSetsService {
     int days = 30,
   }) async {
     final logs = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.routineExerciseId.equals(routineExerciseId)))
+          ..where((l) => l.exerciseId.equals(routineExerciseId)))
         .get();
     if (logs.isEmpty) return null;
     final cutoff = DateTime.now().subtract(Duration(days: days));
@@ -242,12 +210,71 @@ class SessionSetsService {
     return best;
   }
 
+  /// Inserts a completed strength session dated yesterday (local calendar day).
+  /// Returns false if a log already exists for that day. For dev/testing only.
+  Future<bool> insertDummyStrengthWorkoutForYesterday({
+    required String routineExerciseId,
+    required int setCount,
+    double baseWeightKg = 60,
+    int repsPerSet = 8,
+  }) async {
+    final setsToCreate = setCount.clamp(1, 20);
+    final nowLocal = DateTime.now();
+    final yesterdayStart = DateTime(
+      nowLocal.year,
+      nowLocal.month,
+      nowLocal.day,
+    ).subtract(const Duration(days: 1));
+
+    final existing = await (_db.select(_db.workoutLogs)
+          ..where((l) => l.exerciseId.equals(routineExerciseId)))
+        .get();
+    for (final log in existing) {
+      final local = log.date.toLocal();
+      if (local.year == yesterdayStart.year &&
+          local.month == yesterdayStart.month &&
+          local.day == yesterdayStart.day) {
+        return false;
+      }
+    }
+
+    final sessionLocal = DateTime(
+      yesterdayStart.year,
+      yesterdayStart.month,
+      yesterdayStart.day,
+      18,
+      0,
+    );
+    final logId = _uuid.v4();
+    await _db.into(_db.workoutLogs).insert(
+          drift.WorkoutLogsCompanion.insert(
+            id: logId,
+            exerciseId: routineExerciseId,
+            date: sessionLocal.toUtc(),
+          ),
+        );
+
+    final persistedSets = <session.SetEntry>[];
+    for (var n = 1; n <= setsToCreate; n++) {
+      final weight = baseWeightKg + (n - 1) * 2.5;
+      final entry = session.SetEntry(
+        setNumber: n,
+        weight: weight,
+        reps: repsPerSet,
+        isCompleted: true,
+      );
+      persistedSets.add(await persistSet(logId, entry));
+    }
+    await saveWorkoutLogTotalTrainingLoad(logId, persistedSets);
+    return true;
+  }
+
   Future<int?> maxTimerHoldSecondsLastDays(
     String routineExerciseId, {
     int days = 30,
   }) async {
     final logs = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.routineExerciseId.equals(routineExerciseId)))
+          ..where((l) => l.exerciseId.equals(routineExerciseId)))
         .get();
     if (logs.isEmpty) return null;
     final cutoff = DateTime.now().subtract(Duration(days: days));
@@ -256,7 +283,7 @@ class SessionSetsService {
       if (log.date.toLocal().isBefore(cutoff)) continue;
       final sets = await loadSets(log.id);
       for (final s in sets) {
-        final d = s.durationSeconds;
+        final d = s.timeElapsed;
         if (d == null || d < 1) continue;
         if (best == null || d > best) best = d;
       }

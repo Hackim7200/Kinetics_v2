@@ -18,26 +18,23 @@ class RoutineService {
     await _db.into(_db.routines).insertOnConflictUpdate(
           RoutinesCompanion(
             id: Value(id),
-            name: Value(routine.name),
+            title: Value(routine.title),
             description: routine.description != null
                 ? Value(routine.description)
-                : const Value(null),
-            estimatedDurationMinutes: routine.estimatedDurationMinutes != null
-                ? Value(routine.estimatedDurationMinutes)
                 : const Value(null),
           ),
         );
   }
 
-  /// Reactive list of all routines, sorted by name (for dashboard / lists).
+  /// Reactive list of all routines, sorted by title (for dashboard / lists).
   Stream<List<Routine>> watchRoutines() {
     return (_db.select(_db.routines)
-          ..orderBy([(r) => OrderingTerm.asc(r.name)]))
+          ..orderBy([(r) => OrderingTerm.asc(r.title)]))
         .watch();
   }
 
   /// Deletes a routine and cascades through its [RoutineExercise] rows,
-  /// workout logs, and set entries. Does not delete [Exercise] rows.
+  /// workout logs, and set entries.
   Future<void> deleteRoutine(Routine routine) async {
     await _db.transaction(() async {
       final routineExercises = await (_db.select(_db.routineExercises)
@@ -59,7 +56,7 @@ class RoutineService {
   /// Deletes all [WorkoutLog] and [SetEntry] rows for a [RoutineExercise].
   Future<void> _deleteLogsForRoutineExercise(String routineExerciseId) async {
     final logs = await (_db.select(_db.workoutLogs)
-          ..where((l) => l.routineExerciseId.equals(routineExerciseId)))
+          ..where((l) => l.exerciseId.equals(routineExerciseId)))
         .get();
 
     for (final log in logs) {

@@ -54,7 +54,7 @@ class _CircuitDetailScreenState extends ConsumerState<CircuitDetailScreen> {
       MaterialPageRoute<void>(
         builder: (_) => AddCircuitExerciseScreen(
           circuitId: _circuit.id,
-          circuitName: _circuit.name,
+          circuitName: _circuit.title,
         ),
       ),
     );
@@ -95,8 +95,8 @@ class _CircuitDetailScreenState extends ConsumerState<CircuitDetailScreen> {
           const SizedBox(height: 40),
           _CircuitExerciseList(
             circuitId: _circuit.id,
-            circuitName: _circuit.name,
-            stationDurationSeconds: _circuit.stationDurationSeconds,
+            circuitName: _circuit.title,
+            stationDurationSeconds: _circuit.stationDuration,
             circuitExerciseService: circuitExerciseService,
             onAddExercise: _addExercise,
           ),
@@ -125,23 +125,21 @@ class _CircuitHeroHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final roundsLabel = circuit.rounds?.toString() ?? '—';
-    final sec = circuit.stationDurationSeconds;
+    final sec = circuit.stationDuration;
     final durationLabel = sec != null ? '$sec SEC' : '—';
-    final preStartSec = circuit.preStartCountdownSeconds;
+    final preStartSec = circuit.countdown;
     final preStartLabel = preStartSec == null
         ? '—'
         : preStartSec == 0
         ? 'OFF'
         : '$preStartSec SEC';
-    final restSec = circuit.restBetweenRoundsSeconds;
+    final restSec = circuit.rest;
     final restLabel = restSec != null ? '$restSec SEC' : '—';
-    final orderLabel = circuit.randomizeStationOrder == true
-        ? 'RANDOM'
-        : 'LIST';
+    final orderLabel = circuit.order == 'randomised' ? 'RANDOM' : 'LIST';
 
     return DetailHeroHeader(
       eyebrowLabel: 'ACTIVE CIRCUIT',
-      title: circuit.name,
+      title: circuit.title,
       metrics: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -262,34 +260,18 @@ class _CircuitExerciseList extends StatelessWidget {
                 ),
               )
             else
-              FutureBuilder<Map<String, Exercise>>(
-                key: ValueKey(links.map((e) => e.id).join(',')),
-                future: circuitExerciseService.exerciseMapForIds(
-                  links.map((l) => l.exerciseId).toSet(),
-                ),
-                builder: (context, exSnap) {
-                  if (!exSnap.hasData) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  final map = exSnap.data!;
-                  return Column(
-                    children: [
-                      for (var i = 0; i < links.length; i++)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _CircuitExerciseTile(
-                            exercise: map[links[i].exerciseId],
-                            link: links[i],
-                            circuitName: circuitName,
-                            stationDurationSeconds: stationDurationSeconds,
-                          ),
-                        ),
-                    ],
-                  );
-                },
+              Column(
+                children: [
+                  for (final link in links)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: _CircuitExerciseTile(
+                        link: link,
+                        circuitName: circuitName,
+                        stationDurationSeconds: stationDurationSeconds,
+                      ),
+                    ),
+                ],
               ),
             AddExerciseButton(onTap: onAddExercise),
           ],
@@ -300,13 +282,11 @@ class _CircuitExerciseList extends StatelessWidget {
 }
 
 class _CircuitExerciseTile extends StatelessWidget {
-  final Exercise? exercise;
   final CircuitExercise link;
   final String circuitName;
   final int? stationDurationSeconds;
 
   const _CircuitExerciseTile({
-    required this.exercise,
     required this.link,
     required this.circuitName,
     required this.stationDurationSeconds,
@@ -315,25 +295,22 @@ class _CircuitExerciseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final name = exercise?.name ?? 'Unknown exercise';
+    final name = link.title;
     final subtitle = _stationSubtitle(stationDurationSeconds);
 
     return Material(
       color: cs.surfaceContainerLowest,
       child: InkWell(
-        onTap: exercise == null
-            ? null
-            : () {
-                Navigator.of(context).push<void>(
-                  MaterialPageRoute<void>(
-                    builder: (_) => EditCircuitExerciseScreen(
-                      link: link,
-                      exercise: exercise!,
-                      circuitName: circuitName,
-                    ),
-                  ),
-                );
-              },
+        onTap: () {
+          Navigator.of(context).push<void>(
+            MaterialPageRoute<void>(
+              builder: (_) => EditCircuitExerciseScreen(
+                link: link,
+                circuitName: circuitName,
+              ),
+            ),
+          );
+        },
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Row(

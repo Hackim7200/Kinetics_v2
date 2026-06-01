@@ -38,7 +38,7 @@ class CircuitListCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        circuit.name.toUpperCase(),
+                        circuit.title.toUpperCase(),
                         style: GoogleFonts.inter(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
@@ -56,7 +56,8 @@ class CircuitListCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  (circuit.description ?? '').toUpperCase(),
+                  '${circuit.rounds ?? '—'} ROUNDS · ${circuit.order == 'randomised' ? 'RANDOM' : 'SEQUENTIAL'}'
+                      .toUpperCase(),
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,

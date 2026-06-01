@@ -31,32 +31,32 @@ double totalTrainingLoadForSets(Iterable<SetEntry> sets) {
 }
 
 /// Longest single hold in a session (timer sets only); null if none logged.
-int? maxDurationSecondsInSession(Iterable<SetEntry> sets) {
+int? maxTimeElapsedInSession(Iterable<SetEntry> sets) {
   int? best;
   for (final s in sets) {
-    final d = s.durationSeconds;
+    final d = s.timeElapsed;
     if (d != null && d > 0 && (best == null || d > best)) best = d;
   }
   return best;
 }
 
 /// Sum of logged hold durations for timer sets (seconds).
-int totalDurationSecondsForSets(Iterable<SetEntry> sets) {
+int totalTimeElapsedForSets(Iterable<SetEntry> sets) {
   var t = 0;
   for (final s in sets) {
-    final d = s.durationSeconds;
+    final d = s.timeElapsed;
     if (d != null && d > 0) t += d;
   }
   return t;
 }
 
-/// Value stored on [WorkoutLog.totalTrainingLoad]: strength Σ load, else timer Σ seconds.
+/// Strength Σ load, else timer Σ seconds.
 double aggregateMetricForWorkoutLogSets(List<SetEntry> sets) {
   final hasTimerData = sets.any(
-    (s) => s.durationSeconds != null && s.durationSeconds! > 0,
+    (s) => s.timeElapsed != null && s.timeElapsed! > 0,
   );
   if (hasTimerData) {
-    return totalDurationSecondsForSets(sets).toDouble();
+    return totalTimeElapsedForSets(sets).toDouble();
   }
   return totalTrainingLoadForSets(sets);
 }
@@ -70,8 +70,8 @@ class SetEntry {
   /// weight × reps for this set when complete; mirrored in Drift [trainingLoad].
   final double? trainingLoad;
 
-  /// Logged hold duration for timer exercises; mirrored in Drift [durationSeconds].
-  final int? durationSeconds;
+  /// Logged hold duration for timer exercises; mirrored in Drift [timeElapsed].
+  final int? timeElapsed;
 
   /// Drift row id for [SetEntry] when persisted; null for new rows.
   final String? datastoreId;
@@ -82,7 +82,7 @@ class SetEntry {
     this.reps,
     this.isCompleted = false,
     this.trainingLoad,
-    this.durationSeconds,
+    this.timeElapsed,
     this.datastoreId,
   });
 
@@ -92,7 +92,7 @@ class SetEntry {
     Object? reps = _unset,
     bool? isCompleted,
     Object? trainingLoad = _unset,
-    Object? durationSeconds = _unset,
+    Object? timeElapsed = _unset,
     Object? datastoreId = _unset,
   }) {
     return SetEntry(
@@ -103,9 +103,9 @@ class SetEntry {
       trainingLoad: identical(trainingLoad, _unset)
           ? this.trainingLoad
           : trainingLoad as double?,
-      durationSeconds: identical(durationSeconds, _unset)
-          ? this.durationSeconds
-          : durationSeconds as int?,
+      timeElapsed: identical(timeElapsed, _unset)
+          ? this.timeElapsed
+          : timeElapsed as int?,
       datastoreId: identical(datastoreId, _unset)
           ? this.datastoreId
           : datastoreId as String?,
@@ -134,11 +134,8 @@ class WorkoutLog {
   final List<TimerEntry> timerEntries;
   final double? estimatedOneRepMax;
 
-  /// Persisted Σ training load on Drift [WorkoutLog.totalTrainingLoad] when the session is finished.
+  /// Persisted session total (strength Σ load or timer Σ seconds); see Drift [WorkoutLog.totalTrainingLoad].
   final double? totalTrainingLoad;
-
-  /// Persisted vs previous session; see [WorkoutLog.trainingLoadChangePercent] in schema.
-  final double? trainingLoadChangePercent;
 
   const WorkoutLog({
     required this.id,
@@ -148,6 +145,5 @@ class WorkoutLog {
     this.timerEntries = const [],
     this.estimatedOneRepMax,
     this.totalTrainingLoad,
-    this.trainingLoadChangePercent,
   });
 }

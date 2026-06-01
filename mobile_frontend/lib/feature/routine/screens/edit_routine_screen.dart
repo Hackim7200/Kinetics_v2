@@ -32,7 +32,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
     _service = RoutineService(db);
     _routineExerciseService = RoutineExerciseService(db);
     final r = widget.routine;
-    _nameController = TextEditingController(text: r.name);
+    _nameController = TextEditingController(text: r.title);
     _descriptionController = TextEditingController(text: r.description ?? '');
   }
 
@@ -53,7 +53,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
       final desc = _descriptionController.text.trim();
 
       final updated = widget.routine.copyWith(
-        name: name,
+        title: name,
         description: Value(desc.isEmpty ? null : desc),
       );
       await _service.saveRoutine(updated);
@@ -75,7 +75,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Routine'),
         content: Text(
-          'Delete "${widget.routine.name}"? This cannot be undone.',
+          'Delete "${widget.routine.title}"? This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -137,7 +137,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
         children: [
           const SizedBox(height: 4),
           Text(
-            widget.routine.name.toUpperCase(),
+            widget.routine.title.toUpperCase(),
             style: GoogleFonts.inter(
               fontSize: 28,
               fontWeight: FontWeight.w900,

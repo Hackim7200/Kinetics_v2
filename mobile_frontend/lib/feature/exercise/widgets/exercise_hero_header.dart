@@ -19,7 +19,7 @@ class ExerciseHeroHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return DetailHeroHeader(
       eyebrowLabel: 'ACTIVE ROUTINE',
-      title: routine.name,
+      title: routine.title,
       metrics: StreamBuilder<List<RoutineExercise>>(
         stream: routineExerciseService.watchForRoutine(routine.id),
         builder: (context, routineExerciseSnap) {

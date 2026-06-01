@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
@@ -151,16 +152,12 @@ class _WeightExerciseDashboardState
 
   /// Header for [ProgressGraph]: saved % vs previous session, or derived from last two totals.
   String get _trainingLoadChangeDisplay {
-    if (_historySessions.isEmpty) return '—';
-    final last = _historySessions.last;
-    final saved = last.trainingLoadChangePercent;
-    if (saved != null) {
-      final sign = saved > 0 ? '+' : '';
-      return '$sign${saved.toStringAsFixed(1)}';
-    }
     if (_historySessions.length < 2) return '—';
     final totals = _historySessions
-        .map((w) => totalTrainingLoadForSets(w.sets))
+        .map(
+          (w) =>
+              w.totalTrainingLoad ?? totalTrainingLoadForSets(w.sets),
+        )
         .toList();
     final prev = totals[totals.length - 2];
     final cur = totals[totals.length - 1];
@@ -289,6 +286,48 @@ class _WeightExerciseDashboardState
         });
   }
 
+  Future<void> _insertDummyYesterdayWorkout() async {
+    final routineExerciseId = widget.exercise.routineExerciseId;
+    if (routineExerciseId == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Open this exercise from a routine to add test data.'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final inserted = await _sessionSetsService.insertDummyStrengthWorkoutForYesterday(
+        routineExerciseId: routineExerciseId,
+        setCount: _maxSets,
+        baseWeightKg: widget.exercise.weight > 0 ? widget.exercise.weight : 60,
+        repsPerSet: widget.exercise.reps > 0 ? widget.exercise.reps : 8,
+      );
+      if (!mounted) return;
+      if (!inserted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Yesterday already has a workout log for this exercise.'),
+          ),
+        );
+        return;
+      }
+      await _loadTrainingLoadHistory(routineExerciseId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dummy workout added for yesterday.')),
+      );
+    } catch (e, st) {
+      debugPrint('Dummy workout insert failed: $e $st');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not add test data: $e')),
+      );
+    }
+  }
+
   Future<void> _persistAndAddSet(String logId, int nextNumber) async {
     try {
       final lastIndex = _sets.length - 1;
@@ -374,6 +413,14 @@ class _WeightExerciseDashboardState
         ),
         const SizedBox(height: 24),
         WorkoutDetailHistoryTable(sessions: _historySessions),
+        if (kDebugMode) ...[
+          const SizedBox(height: 24),
+          OutlinedButton.icon(
+            onPressed: _insertDummyYesterdayWorkout,
+            icon: const Icon(Icons.science_outlined, size: 18),
+            label: const Text('Add yesterday (test data)'),
+          ),
+        ],
       ],
     );
   }

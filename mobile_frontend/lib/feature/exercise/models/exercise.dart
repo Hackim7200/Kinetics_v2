@@ -11,7 +11,6 @@ class Exercise {
   final int reps;
   final double weight;
   final Duration? duration;
-  final Duration? restTime;
   final double? progressPercent;
   final String? progressLabel;
   final List<WorkoutLog> logs;
@@ -29,7 +28,6 @@ class Exercise {
     this.reps = 0,
     this.weight = 0,
     this.duration,
-    this.restTime,
     this.progressPercent,
     this.progressLabel,
     this.logs = const [],

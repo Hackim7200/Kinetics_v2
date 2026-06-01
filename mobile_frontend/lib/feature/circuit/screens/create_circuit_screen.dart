@@ -121,16 +121,14 @@ class _CreateCircuitScreenState extends ConsumerState<CreateCircuitScreen> {
     setState(() => _saving = true);
 
     try {
-      final desc = _descriptionController.text.trim();
       final circuit = Circuit(
         id: '',
-        name: name,
-        description: desc.isEmpty ? null : desc,
+        title: name,
+        order: _randomizeStationOrder ? 'randomised' : 'sequential',
         rounds: rounds,
-        stationDurationSeconds: stationSec,
-        preStartCountdownSeconds: preStartSec,
-        restBetweenRoundsSeconds: restSec,
-        randomizeStationOrder: _randomizeStationOrder,
+        stationDuration: stationSec,
+        countdown: preStartSec,
+        rest: restSec,
       );
       await _service.saveCircuit(circuit);
       if (mounted) Navigator.of(context).pop();

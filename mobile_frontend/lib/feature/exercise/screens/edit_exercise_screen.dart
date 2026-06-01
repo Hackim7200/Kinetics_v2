@@ -12,13 +12,11 @@ import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.da
 
 class EditExerciseScreen extends ConsumerStatefulWidget {
   final RoutineExercise routineExercise;
-  final Exercise exercise;
   final String? routineName;
 
   const EditExerciseScreen({
     super.key,
     required this.routineExercise,
-    required this.exercise,
     this.routineName,
   });
 
@@ -33,7 +31,8 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
   late final RoutineExerciseService _routineExerciseService;
   late String _timerTarget;
 
-  String get _type => widget.exercise.type == 'timer' ? 'timer' : 'strength';
+  String get _type =>
+      widget.routineExercise.type == 'timer' ? 'timer' : 'strength';
   bool _saving = false;
   bool _deleting = false;
 
@@ -43,9 +42,8 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
     _routineExerciseService = RoutineExerciseService(
       ref.read(appDatabaseProvider),
     );
-    final ex = widget.exercise;
     final routineExercise = widget.routineExercise;
-    _nameController = TextEditingController(text: ex.name);
+    _nameController = TextEditingController(text: routineExercise.title);
     _setsController = TextEditingController(
       text: routineExercise.targetSets?.toString() ?? '',
     );
@@ -101,9 +99,8 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
 
     try {
       await _routineExerciseService.updateExerciseInRoutine(
-        exercise: widget.exercise,
         routineExercise: widget.routineExercise,
-        name: name,
+        title: name,
         type: _type,
         targetSets: _type == 'strength' || _type == 'timer'
             ? int.parse(_setsController.text.trim())
@@ -129,7 +126,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Exercise'),
         content: Text(
-          'Remove "${widget.exercise.name}" from this routine? '
+          'Remove "${widget.routineExercise.title}" from this routine? '
           'Session history for this exercise will be deleted.',
         ),
         actions: [
@@ -150,8 +147,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
     setState(() => _deleting = true);
     try {
       await _routineExerciseService.deleteExerciseEntry(
-        routineExercise: widget.routineExercise,
-        exercise: widget.exercise,
+        widget.routineExercise,
       );
       if (mounted) Navigator.of(context).pop('deleted');
     } catch (e) {
@@ -195,7 +191,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
         children: [
           const SizedBox(height: 4),
           Text(
-            widget.exercise.name.toUpperCase(),
+            widget.routineExercise.title.toUpperCase(),
             style: GoogleFonts.inter(
               fontSize: 28,
               fontWeight: FontWeight.w900,

@@ -4,7 +4,6 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:mobile_frontend/database/tables/circuit_tables/circuit_exercise_table.dart';
 import 'package:mobile_frontend/database/tables/circuit_tables/circuit_table.dart';
-import 'package:mobile_frontend/database/tables/workout_tables/exercise_table.dart';
 import 'package:mobile_frontend/database/tables/workout_tables/routine_exercise_table.dart';
 import 'package:mobile_frontend/database/tables/workout_tables/routine_table.dart';
 import 'package:mobile_frontend/database/tables/workout_tables/set_entry_table.dart';
@@ -19,7 +18,6 @@ part 'database.g.dart';
 @DriftDatabase(
   tables: [
     Routines,
-    Exercises,
     RoutineExercises,
     Circuits,
     CircuitExercises,
@@ -41,19 +39,11 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) => m.createAll(),
     onUpgrade: (m, from, to) async {
-      if (from < 4) {
-        await m.database.customStatement('DROP TABLE IF EXISTS todo_table');
+      if (from < 2) {
+        await m.addColumn(workoutLogs, workoutLogs.totalTrainingLoad);
       }
-      if (from < 3) {
-        await m.database.customStatement('DROP TABLE IF EXISTS routine_table');
-        await m.database.customStatement('DROP TABLE IF EXISTS routines');
-        await m.createTable(routines);
-        await m.createTable(exercises);
-        await m.createTable(routineExercises);
-        await m.createTable(circuits);
-        await m.createTable(circuitExercises);
-        await m.createTable(workoutLogs);
-        await m.createTable(setEntries);
+      if (from < 4 && from >= 3) {
+        await m.dropColumn(workoutLogs, 'training_load_change_percent');
       }
     },
   );

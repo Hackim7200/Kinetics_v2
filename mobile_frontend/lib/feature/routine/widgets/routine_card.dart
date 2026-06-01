@@ -41,7 +41,7 @@ class RoutineCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          routine.name.toUpperCase(),
+                          routine.title.toUpperCase(),
                           style: GoogleFonts.inter(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,

@@ -43,7 +43,7 @@ class _CreateRoutineScreenState extends ConsumerState<CreateRoutineScreen> {
       final desc = _descriptionController.text.trim();
       final routine = Routine(
         id: '',
-        name: name,
+        title: name,
         description: desc.isEmpty ? null : desc,
       );
       await _service.saveRoutine(routine);

@@ -38,21 +38,21 @@ class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
     _service = CircuitService(db);
     _circuitExerciseService = CircuitExerciseService(db);
     final c = widget.circuit;
-    _nameController = TextEditingController(text: c.name);
-    _descriptionController = TextEditingController(text: c.description ?? '');
+    _nameController = TextEditingController(text: c.title);
+    _descriptionController = TextEditingController();
     _roundsController = TextEditingController(
       text: c.rounds?.toString() ?? '',
     );
     _durationController = TextEditingController(
-      text: c.stationDurationSeconds?.toString() ?? '',
+      text: c.stationDuration?.toString() ?? '',
     );
     _preStartCountdownController = TextEditingController(
-      text: c.preStartCountdownSeconds?.toString() ?? '10',
+      text: c.countdown?.toString() ?? '10',
     );
     _restBetweenRoundsController = TextEditingController(
-      text: c.restBetweenRoundsSeconds?.toString() ?? '30',
+      text: c.rest?.toString() ?? '30',
     );
-    _randomizeStationOrder = c.randomizeStationOrder ?? false;
+    _randomizeStationOrder = c.order == 'randomised';
   }
 
   @override
@@ -143,16 +143,13 @@ class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
     setState(() => _saving = true);
 
     try {
-      final desc = _descriptionController.text.trim();
-
       final updated = widget.circuit.copyWith(
-        name: name,
-        description: Value(desc.isEmpty ? null : desc),
+        title: name,
+        order: _randomizeStationOrder ? 'randomised' : 'sequential',
         rounds: Value(rounds),
-        stationDurationSeconds: Value(stationSec),
-        preStartCountdownSeconds: Value(preStartSec),
-        restBetweenRoundsSeconds: Value(restSec),
-        randomizeStationOrder: Value(_randomizeStationOrder),
+        stationDuration: Value(stationSec),
+        countdown: Value(preStartSec),
+        rest: Value(restSec),
       );
       await _service.saveCircuit(updated);
       if (mounted) Navigator.of(context).pop(updated);
@@ -173,7 +170,7 @@ class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Circuit'),
         content: Text(
-          'Delete "${widget.circuit.name}"? This cannot be undone.',
+          'Delete "${widget.circuit.title}"? This cannot be undone.',
         ),
         actions: [
           TextButton(
@@ -244,7 +241,7 @@ class _EditCircuitScreenState extends ConsumerState<EditCircuitScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            widget.circuit.name.toUpperCase(),
+            widget.circuit.title.toUpperCase(),
             style: GoogleFonts.inter(
               fontSize: 28,
               fontWeight: FontWeight.w900,

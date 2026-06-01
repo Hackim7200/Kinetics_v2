@@ -95,7 +95,7 @@ Future<bool> showTechniqueNotesEditor(
 
   try {
     await ExerciseTechniquesService(db).saveTechniques(
-      exerciseId: exerciseId,
+      routineExerciseId: exerciseId,
       text: textToSave,
     );
   } catch (_) {

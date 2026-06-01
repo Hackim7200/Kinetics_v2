@@ -16,24 +16,16 @@ class CircuitService {
     await _db.into(_db.circuits).insertOnConflictUpdate(
           CircuitsCompanion(
             id: Value(id),
-            name: Value(circuit.name),
-            description: circuit.description != null
-                ? Value(circuit.description)
+            title: Value(circuit.title),
+            order: Value(circuit.order),
+            rest: circuit.rest != null ? Value(circuit.rest) : const Value(null),
+            rounds:
+                circuit.rounds != null ? Value(circuit.rounds) : const Value(null),
+            countdown: circuit.countdown != null
+                ? Value(circuit.countdown)
                 : const Value(null),
-            rounds: circuit.rounds != null
-                ? Value(circuit.rounds)
-                : const Value(null),
-            stationDurationSeconds: circuit.stationDurationSeconds != null
-                ? Value(circuit.stationDurationSeconds)
-                : const Value(null),
-            preStartCountdownSeconds: circuit.preStartCountdownSeconds != null
-                ? Value(circuit.preStartCountdownSeconds)
-                : const Value(null),
-            restBetweenRoundsSeconds: circuit.restBetweenRoundsSeconds != null
-                ? Value(circuit.restBetweenRoundsSeconds)
-                : const Value(null),
-            randomizeStationOrder: circuit.randomizeStationOrder != null
-                ? Value(circuit.randomizeStationOrder)
+            stationDuration: circuit.stationDuration != null
+                ? Value(circuit.stationDuration)
                 : const Value(null),
           ),
         );
@@ -41,25 +33,16 @@ class CircuitService {
 
   Stream<List<Circuit>> watchCircuits() {
     return (_db.select(_db.circuits)
-          ..orderBy([(c) => OrderingTerm.asc(c.name)]))
+          ..orderBy([(c) => OrderingTerm.asc(c.title)]))
         .watch();
   }
 
-  /// Deletes a circuit and all linked circuit-exercise rows and exercises.
+  /// Deletes a circuit and all linked circuit-exercise rows.
   Future<void> deleteCircuit(Circuit circuit) async {
     await _db.transaction(() async {
-      final links = await (_db.select(_db.circuitExercises)
+      await (_db.delete(_db.circuitExercises)
             ..where((t) => t.circuitId.equals(circuit.id)))
-          .get();
-
-      for (final link in links) {
-        await (_db.delete(_db.circuitExercises)
-              ..where((t) => t.id.equals(link.id)))
-            .go();
-        await (_db.delete(_db.exercises)..where((e) => e.id.equals(link.exerciseId)))
-            .go();
-      }
-
+          .go();
       await (_db.delete(_db.circuits)..where((c) => c.id.equals(circuit.id))).go();
     });
   }

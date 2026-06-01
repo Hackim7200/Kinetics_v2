@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/database/database.dart';
+import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/widgets/add_exercise_button.dart';
 import 'package:mobile_frontend/feature/exercise/widgets/exercise_tile.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/session_sets_service.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/data/workout_log_stats.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 
-class ExerciseList extends StatelessWidget {
+class ExerciseList extends ConsumerWidget {
   final String routineId;
   final String routineName;
   final RoutineExerciseService routineExerciseService;
@@ -21,8 +24,9 @@ class ExerciseList extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final appTheme = Theme.of(context).colorScheme;
+    final sessionSets = SessionSetsService(ref.read(appDatabaseProvider));
 
     return StreamBuilder<List<RoutineExercise>>(
       stream: routineExerciseService.watchForRoutine(routineId),
@@ -90,51 +94,75 @@ class ExerciseList extends StatelessWidget {
                 ),
               )
             else
-              FutureBuilder<Map<String, Exercise>>(
-                key: ValueKey(routineExercises.map((e) => e.id).join(',')),
-                future: routineExerciseService.exerciseMapForIds(
-                  routineExercises.map((re) => re.exerciseId).toSet(),
-                ),
-                builder: (context, exSnap) {
-                  if (!exSnap.hasData) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-                  final map = exSnap.data!;
-                  return StreamBuilder<List<WorkoutLog>>(
-                    stream: routineExerciseService.watchAllWorkoutLogs(),
-                    builder: (context, logSnap) {
-                      final logs = logSnap.data ?? const <WorkoutLog>[];
-                      return Column(
-                        children: [
-                          for (var i = 0; i < routineExercises.length; i++)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: ExerciseTile(
-                                exercise: map[routineExercises[i].exerciseId],
-                                routineExercise: routineExercises[i],
-                                listIndex: i,
-                                routineName: routineName,
-                                trainingLoadChangePercent:
-                                    map[routineExercises[i].exerciseId]?.type !=
-                                        'timer'
-                                    ? WorkoutLogStats.trainingLoadChangePercentForLatestSession(
-                                        routineExercises[i].id,
-                                        logs,
-                                      )
-                                    : null,
-                              ),
-                            ),
-                        ],
-                      );
-                    },
+              StreamBuilder<List<WorkoutLog>>(
+                stream: routineExerciseService.watchAllWorkoutLogs(),
+                builder: (context, logSnap) {
+                  final logs = logSnap.data ?? const <WorkoutLog>[];
+                  return Column(
+                    children: [
+                      for (var i = 0; i < routineExercises.length; i++)
+                        _ExerciseTileWithStats(
+                          routineExercise: routineExercises[i],
+                          listIndex: i,
+                          routineName: routineName,
+                          logs: logs,
+                          sessionSets: sessionSets,
+                        ),
+                    ],
                   );
                 },
               ),
             AddExerciseButton(onTap: onAddExercise),
           ],
+        );
+      },
+    );
+  }
+}
+
+class _ExerciseTileWithStats extends StatelessWidget {
+  const _ExerciseTileWithStats({
+    required this.routineExercise,
+    required this.listIndex,
+    required this.routineName,
+    required this.logs,
+    required this.sessionSets,
+  });
+
+  final RoutineExercise routineExercise;
+  final int listIndex;
+  final String routineName;
+  final List<WorkoutLog> logs;
+  final SessionSetsService sessionSets;
+
+  @override
+  Widget build(BuildContext context) {
+    if (routineExercise.type == 'timer') {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: ExerciseTile(
+          routineExercise: routineExercise,
+          listIndex: listIndex,
+          routineName: routineName,
+        ),
+      );
+    }
+
+    return FutureBuilder<double?>(
+      future: WorkoutLogStats.trainingLoadChangePercentForLatestSession(
+        routineExercise.id,
+        logs,
+        sessionSets.loadSets,
+      ),
+      builder: (context, snap) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: ExerciseTile(
+            routineExercise: routineExercise,
+            listIndex: listIndex,
+            routineName: routineName,
+            trainingLoadChangePercent: snap.data,
+          ),
         );
       },
     );

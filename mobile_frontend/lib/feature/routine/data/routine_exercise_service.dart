@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 
 const _uuid = Uuid();
 
-/// Routine exercises, exercise definitions, and related workout history (Drift).
+/// Routine exercises and related workout history (Drift).
 class RoutineExerciseService {
   RoutineExerciseService(this._db);
 
@@ -36,7 +36,7 @@ class RoutineExerciseService {
     };
     final best = <String, DateTime>{};
     for (final log in logs) {
-      final routineId = routineExerciseIdToRoutineId[log.routineExerciseId];
+      final routineId = routineExerciseIdToRoutineId[log.exerciseId];
       if (routineId == null) continue;
       final at = log.date.toUtc();
       best.update(
@@ -79,24 +79,14 @@ class RoutineExerciseService {
         .get();
   }
 
-  /// Loads [Exercise] rows for the given ids as a map keyed by id.
-  Future<Map<String, Exercise>> exerciseMapForIds(Set<String> ids) async {
-    if (ids.isEmpty) return {};
-    final rows = await (_db.select(_db.exercises)
-          ..where((e) => e.id.isIn(ids)))
-        .get();
-    return {for (final e in rows) e.id: e};
-  }
-
-  /// Creates an [Exercise] and appends a [RoutineExercise] slot at the end of the routine.
+  /// Appends a [RoutineExercise] slot at the end of the routine.
   Future<void> addExerciseToRoutine({
     required String routineId,
-    required String name,
+    required String title,
     required String type,
-    String? muscleGroup,
+    String? techniqueNote,
     int? targetSets,
     String? targetReps,
-    int? restSeconds,
     String? timerTarget,
   }) async {
     final routineExercises = await routineExercisesForRoutine(routineId);
@@ -104,71 +94,58 @@ class RoutineExerciseService {
         ? 0
         : routineExercises.last.orderIndex + 1;
 
-    final trimmedMuscle = muscleGroup?.trim();
-    final exerciseId = _uuid.v4();
-
-    await _db.into(_db.exercises).insert(
-          ExercisesCompanion.insert(
-            id: exerciseId,
-            name: name.trim(),
-            type: type,
-            muscleGroup: trimmedMuscle != null && trimmedMuscle.isNotEmpty
-                ? Value(trimmedMuscle)
-                : const Value.absent(),
-          ),
-        );
+    final trimmedNote = techniqueNote?.trim();
+    final dbType = type == 'timer' ? 'timer' : 'weight';
 
     await _db.into(_db.routineExercises).insert(
           RoutineExercisesCompanion.insert(
             id: _uuid.v4(),
             routineId: routineId,
-            exerciseId: exerciseId,
+            title: title.trim(),
             orderIndex: nextOrder,
+            type: dbType,
             targetSets: Value(targetSets),
             targetReps: Value(targetReps),
-            restSeconds: Value(restSeconds),
-            timerTarget: Value(type == 'timer' ? timerTarget : null),
+            timerTarget: Value(dbType == 'timer' ? timerTarget : null),
+            techniqueNote: trimmedNote != null && trimmedNote.isNotEmpty
+                ? Value(trimmedNote)
+                : const Value.absent(),
           ),
         );
   }
 
-  /// Removes only the [RoutineExercise] row; leaves [Exercise] and logs intact.
+  /// Removes only the [RoutineExercise] row; leaves workout logs intact.
   Future<void> removeRoutineExercise(RoutineExercise routineExercise) async {
     await (_db.delete(_db.routineExercises)
           ..where((t) => t.id.equals(routineExercise.id)))
         .go();
   }
 
-  /// Updates [Exercise] name/type and [RoutineExercise] targets for a slot.
+  /// Updates [RoutineExercise] title, type, and targets for a slot.
   Future<void> updateExerciseInRoutine({
-    required Exercise exercise,
     required RoutineExercise routineExercise,
-    required String name,
+    required String title,
     required String type,
     int? targetSets,
     String? targetReps,
     String? timerTarget,
   }) async {
-    await (_db.update(_db.exercises)..where((e) => e.id.equals(exercise.id)))
-        .write(
-      ExercisesCompanion(
-        name: Value(name.trim()),
-        type: Value(type),
-      ),
-    );
+    final dbType = type == 'timer' ? 'timer' : 'weight';
 
-    final repsForStore = type == 'strength' &&
+    final repsForStore = dbType == 'weight' &&
             targetReps != null &&
             targetReps.trim().isNotEmpty
         ? targetReps.trim()
         : null;
 
-    final timerTargetForStore = type == 'timer' ? timerTarget : null;
+    final timerTargetForStore = dbType == 'timer' ? timerTarget : null;
 
     await (_db.update(_db.routineExercises)
           ..where((t) => t.id.equals(routineExercise.id)))
         .write(
       RoutineExercisesCompanion(
+        title: Value(title.trim()),
+        type: Value(dbType),
         targetSets: Value(targetSets),
         targetReps: Value(repsForStore),
         timerTarget: Value(timerTargetForStore),
@@ -176,14 +153,11 @@ class RoutineExerciseService {
     );
   }
 
-  /// Deletes the [RoutineExercise], its workout logs/set entries, and the [Exercise] row.
-  Future<void> deleteExerciseEntry({
-    required RoutineExercise routineExercise,
-    required Exercise exercise,
-  }) async {
+  /// Deletes the [RoutineExercise] and its workout logs/set entries.
+  Future<void> deleteExerciseEntry(RoutineExercise routineExercise) async {
     await _db.transaction(() async {
       final logs = await (_db.select(_db.workoutLogs)
-            ..where((l) => l.routineExerciseId.equals(routineExercise.id)))
+            ..where((l) => l.exerciseId.equals(routineExercise.id)))
           .get();
 
       for (final log in logs) {
@@ -196,8 +170,6 @@ class RoutineExerciseService {
 
       await (_db.delete(_db.routineExercises)
             ..where((t) => t.id.equals(routineExercise.id)))
-          .go();
-      await (_db.delete(_db.exercises)..where((e) => e.id.equals(exercise.id)))
           .go();
     });
   }

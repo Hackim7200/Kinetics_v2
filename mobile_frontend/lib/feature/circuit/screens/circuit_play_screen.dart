@@ -45,17 +45,17 @@ class _CircuitPlayScreenState extends ConsumerState<CircuitPlayScreen> {
   int _pendingRoundAfterRest = 0;
 
   int get _stationSec =>
-      widget.circuit.stationDurationSeconds?.clamp(1, 3600) ?? 30;
+      widget.circuit.stationDuration?.clamp(1, 3600) ?? 30;
 
   /// 0 = skip countdown and start the first station immediately.
   int get _preStartCountdownSec {
-    final v = widget.circuit.preStartCountdownSeconds;
+    final v = widget.circuit.countdown;
     if (v == null) return 10;
     return v.clamp(0, 300);
   }
 
   int get _restBetweenRoundsSec =>
-      widget.circuit.restBetweenRoundsSeconds?.clamp(1, 3600) ?? 30;
+      widget.circuit.rest?.clamp(1, 3600) ?? 30;
 
   int get _totalRounds => (widget.circuit.rounds ?? 1).clamp(1, 999);
 
@@ -119,15 +119,12 @@ class _CircuitPlayScreenState extends ConsumerState<CircuitPlayScreen> {
   Future<void> _loadStations() async {
     try {
       final links = await _circuitExerciseService.linksForCircuit(widget.circuit.id);
-      final map = await _circuitExerciseService.exerciseMapForIds(
-        links.map((l) => l.exerciseId).toSet(),
-      );
       final names = links
-          .map((l) => map[l.exerciseId]?.name.trim() ?? 'Exercise')
+          .map((l) => l.title.trim())
           .where((n) => n.isNotEmpty)
           .toList();
       final playOrder = List<String>.from(names);
-      if (widget.circuit.randomizeStationOrder == true && playOrder.length > 1) {
+      if (widget.circuit.order == 'randomised' && playOrder.length > 1) {
         playOrder.shuffle(Random());
       }
       if (!mounted) return;
@@ -346,7 +343,7 @@ class _CircuitPlayScreenState extends ConsumerState<CircuitPlayScreen> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Text(
-                            widget.circuit.name.toUpperCase(),
+                            widget.circuit.title.toUpperCase(),
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
