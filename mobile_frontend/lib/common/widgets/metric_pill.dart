@@ -9,7 +9,7 @@ class MetricPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final appTheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -19,7 +19,7 @@ class MetricPill extends StatelessWidget {
             fontSize: 10,
             fontWeight: FontWeight.w500,
             letterSpacing: 2,
-            color: cs.outline,
+            color: appTheme.outline,
           ),
         ),
         const SizedBox(height: 4),
@@ -28,7 +28,7 @@ class MetricPill extends StatelessWidget {
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: cs.onSurface,
+            color: appTheme.onSurface,
           ),
         ),
       ],
@@ -53,7 +53,7 @@ class MetricPillPair extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final appTheme = Theme.of(context).colorScheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,7 +64,7 @@ class MetricPillPair extends StatelessWidget {
           width: 1,
           height: 32,
           margin: const EdgeInsets.symmetric(horizontal: 24),
-          color: cs.surfaceContainerHighest,
+          color: appTheme.surfaceContainerHighest,
         ),
         Expanded(
           child: MetricPill(label: rightLabel, value: rightValue),

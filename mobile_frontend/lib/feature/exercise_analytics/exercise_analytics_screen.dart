@@ -49,7 +49,9 @@ class _ExerciseAnalyticsScreenState
   @override
   void initState() {
     super.initState();
-    _routineExerciseService = RoutineExerciseService(ref.read(appDatabaseProvider));
+    _routineExerciseService = RoutineExerciseService(
+      ref.read(appDatabaseProvider),
+    );
     _exercise = widget.exercise;
   }
 
@@ -71,7 +73,9 @@ class _ExerciseAnalyticsScreenState
       final linkRow = routineExercises
           .where((re) => re.id == link.id)
           .firstOrNull;
-      final exercises = await _routineExerciseService.exerciseMapForIds({stored.id});
+      final exercises = await _routineExerciseService.exerciseMapForIds({
+        stored.id,
+      });
       final exerciseRow = exercises[stored.id];
       if (!mounted || linkRow == null || exerciseRow == null) return;
       setState(() {

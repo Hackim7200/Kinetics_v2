@@ -116,16 +116,16 @@ class ExerciseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final appTheme = Theme.of(context).colorScheme;
     final name = exercise?.name ?? 'Unknown exercise';
     final delta = trainingLoadChangePercent;
     final subtitle = _subtitleLine(routineExercise, listIndex, exercise);
     final progress = delta != null
-        ? _progressFromDeltaPercent(delta, cs.outline)
+        ? _progressFromDeltaPercent(delta, appTheme.outline)
         : null;
 
     return Material(
-      color: cs.surfaceContainerLowest,
+      color: appTheme.surfaceContainerLowest,
       child: InkWell(
         onTap: () {
           final detailExercise = exerciseForWorkoutDetail(
@@ -161,7 +161,7 @@ class ExerciseTile extends StatelessWidget {
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
                         height: 1.2,
-                        color: cs.onSurface,
+                        color: appTheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -170,7 +170,7 @@ class ExerciseTile extends StatelessWidget {
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
-                        color: cs.tertiary,
+                        color: appTheme.tertiary,
                       ),
                     ),
                   ],

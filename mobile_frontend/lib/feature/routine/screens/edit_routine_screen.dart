@@ -111,7 +111,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
+    final appTheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: KineticAppBar(
@@ -126,7 +126,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2,
-                color: (_saving || _deleting) ? cs.outline : cs.primary,
+                color: (_saving || _deleting) ? appTheme.outline : appTheme.primary,
               ),
             ),
           ),
@@ -135,15 +135,6 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
         children: [
-          Text(
-            'UPDATE',
-            style: GoogleFonts.inter(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 3,
-              color: cs.tertiary,
-            ),
-          ),
           const SizedBox(height: 4),
           Text(
             widget.routine.name.toUpperCase(),
@@ -152,7 +143,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
               fontWeight: FontWeight.w900,
               letterSpacing: -1.5,
               height: 1.0,
-              color: cs.onSurface,
+              color: appTheme.onSurface,
             ),
           ),
           const SizedBox(height: 48),
@@ -164,7 +155,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
             _descriptionController,
           ),
           const SizedBox(height: 32),
-          _buildDerivedExerciseCount(cs),
+          _buildDerivedExerciseCount(appTheme),
           const SizedBox(height: 48),
           Container(
             width: double.infinity,
@@ -172,7 +163,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [cs.primary, cs.primaryContainer],
+                colors: [appTheme.primary, appTheme.primaryContainer],
               ),
               borderRadius: BorderRadius.circular(4),
             ),
@@ -190,7 +181,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
                             width: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: cs.onPrimary,
+                              color: appTheme.onPrimary,
                             ),
                           )
                         : Text(
@@ -199,7 +190,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 3,
-                              color: cs.onPrimary,
+                              color: appTheme.onPrimary,
                             ),
                           ),
                   ),
@@ -219,7 +210,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
                       width: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: cs.error,
+                        color: appTheme.error,
                       ),
                     )
                   : Text(
@@ -228,7 +219,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 2,
-                        color: cs.error,
+                        color: appTheme.error,
                       ),
                     ),
             ),
@@ -238,7 +229,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
     );
   }
 
-  Widget _buildDerivedExerciseCount(ColorScheme cs) {
+  Widget _buildDerivedExerciseCount(ColorScheme appTheme) {
     return StreamBuilder<List<RoutineExercise>>(
       stream: _routineExerciseService.watchForRoutine(widget.routine.id),
       builder: (context, snapshot) {
@@ -252,7 +243,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 2,
-                color: cs.tertiary,
+                color: appTheme.tertiary,
               ),
             ),
             const SizedBox(height: 12),
@@ -261,7 +252,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: cs.onSurface,
+                color: appTheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -271,7 +262,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 height: 1.4,
-                color: cs.outline,
+                color: appTheme.outline,
               ),
             ),
           ],
@@ -286,7 +277,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
     TextEditingController controller, {
     TextInputType keyboardType = TextInputType.text,
   }) {
-    final cs = Theme.of(context).colorScheme;
+    final appTheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -296,7 +287,7 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
             fontSize: 10,
             fontWeight: FontWeight.w700,
             letterSpacing: 2,
-            color: cs.tertiary,
+            color: appTheme.tertiary,
           ),
         ),
         const SizedBox(height: 12),
@@ -306,27 +297,27 @@ class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: cs.onSurface,
+            color: appTheme.onSurface,
           ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w400,
-              color: cs.outlineVariant,
+              color: appTheme.outlineVariant,
             ),
             border: UnderlineInputBorder(
               borderSide: BorderSide(
-                color: cs.outlineVariant.withValues(alpha: 0.3),
+                color: appTheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(
-                color: cs.outlineVariant.withValues(alpha: 0.3),
+                color: appTheme.outlineVariant.withValues(alpha: 0.3),
               ),
             ),
             focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: cs.primary, width: 2),
+              borderSide: BorderSide(color: appTheme.primary, width: 2),
             ),
             contentPadding: const EdgeInsets.only(bottom: 12),
           ),
