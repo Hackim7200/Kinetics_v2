@@ -1,5 +1,5 @@
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/models/workout_log.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
 
 enum ExerciseType { strength, timer }
 
@@ -13,7 +13,7 @@ class Exercise {
   final Duration? duration;
   final double? progressPercent;
   final String? progressLabel;
-  final List<WorkoutLog> logs;
+  final List<Workout> logs;
   /// RoutineExercise id when opened from a routine; used to load prior session notes.
   final String? routineExerciseId;
 

@@ -9,6 +9,13 @@ class TrainingTargetInput {
   static const int minReps = 1;
   static const int maxReps = 80;
 
+  /// Clamps exercise-configured set count to [minSets]..[maxSets].
+  static int clampConfiguredSets(int configuredSets) {
+    if (configuredSets < minSets) return minSets;
+    if (configuredSets > maxSets) return maxSets;
+    return configuredSets;
+  }
+
   /// Digits only; enough digits for max values (12, 80).
   static final List<TextInputFormatter> setsFieldFormatters = [
     FilteringTextInputFormatter.digitsOnly,

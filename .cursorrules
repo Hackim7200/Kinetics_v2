@@ -8,6 +8,7 @@ CURSOR RULES (GLOBAL SYSTEM PROMPT)
 - Optimise for long-term maintainability, not short-term elegance
 - avoid quick fixes, always implement the correct solution
 - avoid complex solutions, always implement the simplest solution
+- always use variable names that describe what it contains or represents dont use short names like i, j, k, etc.
 
 2. EXECUTION WORKFLOW
 When completing a task:

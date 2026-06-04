@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/sub_screen/timer_exercise_dashboard.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/sub_screen/weight_exercise_dashboard.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/sub_screen/weight_exercise_dashboard2.dart';
 
 class ExerciseAnalyticsScreen2 extends StatelessWidget {
   final Exercise exercise;
@@ -47,11 +46,10 @@ class ExerciseAnalyticsScreen2 extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 32),
-          if (exercise.isStrength)
-            WeightExerciseDashboard(exercise: exercise)
-          else
-            TimerExerciseDashboard(exercise: exercise),
+          // const SizedBox(height: 32),
+          if (exercise.isStrength) WeightExerciseDashboard2(exercise: exercise),
+          // else
+          // TimerExerciseDashboard(exercise: exercise),
         ],
       ),
     );

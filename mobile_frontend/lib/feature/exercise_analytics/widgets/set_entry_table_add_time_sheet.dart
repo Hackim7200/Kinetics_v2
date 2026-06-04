@@ -26,7 +26,7 @@ Future<Duration?> showTimerAddTimedSetSheet({
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (ctx) => _TimerAddTimedSetSheetBody(
+    builder: (ctx) => SetEntryTableAddTimeSheet(
       exercise: exercise,
       setNumber: setNumber,
       maxSets: maxSets,
@@ -35,13 +35,13 @@ Future<Duration?> showTimerAddTimedSetSheet({
   );
 }
 
-class _TimerAddTimedSetSheetBody extends StatefulWidget {
+class SetEntryTableAddTimeSheet extends StatefulWidget {
   final Exercise exercise;
   final int setNumber;
   final int maxSets;
   final Duration? personalBestDuration;
 
-  const _TimerAddTimedSetSheetBody({
+  const SetEntryTableAddTimeSheet({super.key, 
     required this.exercise,
     required this.setNumber,
     required this.maxSets,
@@ -49,11 +49,11 @@ class _TimerAddTimedSetSheetBody extends StatefulWidget {
   });
 
   @override
-  State<_TimerAddTimedSetSheetBody> createState() =>
-      _TimerAddTimedSetSheetBodyState();
+  State<SetEntryTableAddTimeSheet> createState() =>
+      _SetEntryTableAddTimeSheetState();
 }
 
-class _TimerAddTimedSetSheetBodyState extends State<_TimerAddTimedSetSheetBody> {
+class _SetEntryTableAddTimeSheetState extends State<SetEntryTableAddTimeSheet> {
   Timer? _uiTick;
   bool _isRunning = false;
   DateTime? _startedAt;

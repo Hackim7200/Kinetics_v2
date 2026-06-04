@@ -5,8 +5,8 @@ import 'package:mobile_frontend/database/database.dart';
 import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/widgets/add_exercise_button.dart';
 import 'package:mobile_frontend/feature/exercise/widgets/exercise_tile.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/data/session_sets_service.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/data/workout_log_stats.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/workout_service.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/workout_stats.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 
 class ExerciseList extends ConsumerWidget {
@@ -26,7 +26,7 @@ class ExerciseList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appTheme = Theme.of(context).colorScheme;
-    final sessionSets = SessionSetsService(ref.read(appDatabaseProvider));
+    final sessionSets = WorkoutService(ref.read(appDatabaseProvider));
 
     return StreamBuilder<List<RoutineExercise>>(
       stream: routineExerciseService.watchForRoutine(routineId),
@@ -90,7 +90,10 @@ class ExerciseList extends ConsumerWidget {
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
                   'No exercises yet. Use the button below to add one.',
-                  style: GoogleFonts.inter(fontSize: 14, color: appTheme.outline),
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: appTheme.outline,
+                  ),
                 ),
               )
             else
@@ -133,7 +136,7 @@ class _ExerciseTileWithStats extends StatelessWidget {
   final int listIndex;
   final String routineName;
   final List<WorkoutLog> logs;
-  final SessionSetsService sessionSets;
+  final WorkoutService sessionSets;
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +152,7 @@ class _ExerciseTileWithStats extends StatelessWidget {
     }
 
     return FutureBuilder<double?>(
-      future: WorkoutLogStats.trainingLoadChangePercentForLatestSession(
+      future: WorkoutStats.trainingLoadChangePercentForLatestSession(
         routineExercise.id,
         logs,
         sessionSets.loadSets,
