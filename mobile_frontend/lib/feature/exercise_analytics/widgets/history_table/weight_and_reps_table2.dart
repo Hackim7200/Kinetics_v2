@@ -1,37 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/set.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/history_table/workout_history_table.dart';
 
-const double _dateColWidth = 92;
-const double _metricColWidth = 48;
-const double _columnSpacing = 12;
-const double _horizontalMargin = 8;
+const double _weightMetricColWidth = 48;
 
-int _maxSetCount(List<Workout> workouts) {
-  var highestSetNumber = 0;
-  for (final workout in workouts) {
-    for (final set in workout.sets) {
-      if (set.setNumber > highestSetNumber) highestSetNumber = set.setNumber;
-    }
-  }
-  return highestSetNumber;
-}
-
-int _lastPageFirstRowIndex(int rowCount, int rowsPerPage) {
-  if (rowCount <= 0) return 0;
-  return ((rowCount - 1) ~/ rowsPerPage) * rowsPerPage;
-}
-
-Set? _setForNumber(Workout workout, int setNumber) {
-  for (final set in workout.sets) {
-    if (set.setNumber == setNumber) return set;
-  }
-  return null;
-}
-
-String _dateLabel(DateTime date) => '${date.month}/${date.day}';
-
-String _metricText(Set? set, {required bool weight}) {
+String _weightOrRepsText(Set? set, {required bool weight}) {
   if (set == null) return '—';
   if (weight) {
     final value = set.weight;
@@ -44,140 +18,22 @@ String _metricText(Set? set, {required bool weight}) {
   return '${set.reps}';
 }
 
-class _WorkoutHistoryDataSource extends DataTableSource {
-  _WorkoutHistoryDataSource({required List<Workout> workouts})
-    : _workouts = workouts,
-      maxSetCount = _maxSetCount(workouts);
-
-  List<Workout> _workouts;
-  int maxSetCount;
-
-  void update(List<Workout> workouts) {
-    _workouts = workouts;
-    maxSetCount = _maxSetCount(workouts);
-    notifyListeners();
-  }
-
-  @override
-  int get rowCount => _workouts.length;
-
-  @override
-  bool get isRowCountApproximate => false;
-
-  @override
-  int get selectedRowCount => 0;
-
-  @override
-  DataRow? getRow(int index) {
-    if (index < 0 || index >= _workouts.length) return null;
-
-    final workout = _workouts[index];
-    return DataRow(
-      cells: [
-        DataCell(Text(_dateLabel(workout.date))),
-        for (var setNumber = 1; setNumber <= maxSetCount; setNumber++) ...[
-          DataCell(
-            Text(_metricText(_setForNumber(workout, setNumber), weight: true)),
-          ),
-          DataCell(
-            Text(_metricText(_setForNumber(workout, setNumber), weight: false)),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
 /// Read-only paginated table: one row per session, columns Date, W1/R1 … WN/RN.
-class WeightsAndRepsTable2 extends StatefulWidget {
+class WeightsAndRepsTable2 extends StatelessWidget {
   final List<Workout> workouts;
 
   const WeightsAndRepsTable2({super.key, required this.workouts});
 
   @override
-  State<WeightsAndRepsTable2> createState() => _WeightsAndRepsTable2State();
-}
-
-class _WeightsAndRepsTable2State extends State<WeightsAndRepsTable2> {
-  static const int _rowsPerPage = 7;
-
-  late _WorkoutHistoryDataSource _dataSource;
-
-  @override
-  void initState() {
-    super.initState();
-    _dataSource = _WorkoutHistoryDataSource(workouts: widget.workouts);
-  }
-
-  @override
-  void didUpdateWidget(WeightsAndRepsTable2 oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.workouts != widget.workouts) {
-      _dataSource.update(widget.workouts);
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (widget.workouts.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(20),
-        child: Text(
-          'No saved workout history for this exercise yet.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-      );
-    }
-
-    final maxSetCount = _dataSource.maxSetCount;
-    final columnCount = 1 + maxSetCount * 2;
-    final minTableWidth =
-        _dateColWidth +
-        (maxSetCount * 2 * _metricColWidth) +
-        (columnCount * _columnSpacing) +
-        (_horizontalMargin * 2);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final viewportWidth = constraints.maxWidth.isFinite
-            ? constraints.maxWidth
-            : minTableWidth;
-        final tableWidth = minTableWidth > viewportWidth
-            ? minTableWidth
-            : viewportWidth;
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            child: PaginatedDataTable(
-              key: ValueKey(widget.workouts.length),
-              showCheckboxColumn: false,
-              columnSpacing: _columnSpacing,
-              horizontalMargin: _horizontalMargin,
-              initialFirstRowIndex: _lastPageFirstRowIndex(
-                widget.workouts.length,
-                _rowsPerPage,
-              ),
-              rowsPerPage: _rowsPerPage,
-              availableRowsPerPage: const [_rowsPerPage],
-              columns: [
-                const DataColumn(label: Text('DATE')),
-                for (
-                  var setNumber = 1;
-                  setNumber <= maxSetCount;
-                  setNumber++
-                ) ...[
-                  DataColumn(label: Text('W$setNumber')),
-                  DataColumn(label: Text('R$setNumber')),
-                ],
-              ],
-              source: _dataSource,
-            ),
-          ),
-        );
-      },
+    return WorkoutHistoryTable(
+      workouts: workouts,
+      metricsPerSet: 2,
+      metricColWidth: _weightMetricColWidth,
+      metricColumnLabel: (setNumber, metricIndex) =>
+          metricIndex == 0 ? 'W$setNumber' : 'R$setNumber',
+      metricCellText: (set, metricIndex) =>
+          _weightOrRepsText(set, weight: metricIndex == 0),
     );
   }
 }
