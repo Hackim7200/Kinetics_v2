@@ -6,7 +6,6 @@ import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/data/workout_service.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/widgets/history_table/weight_and_reps_table.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/history_table/weight_and_reps_table2.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/progress_graph.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/set_entry_table/set_entry_table_weight.dart';

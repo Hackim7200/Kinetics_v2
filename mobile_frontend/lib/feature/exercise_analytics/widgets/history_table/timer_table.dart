@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/set.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/set_entry_table_add_time_sheet.dart';
 
 const double _dateColWidth = 92;
-const double _metricColWidth = 48;
+const double _durationColWidth = 56;
 const double _columnSpacing = 12;
 const double _horizontalMargin = 8;
 
@@ -31,21 +32,14 @@ Set? _setForNumber(Workout workout, int setNumber) {
 
 String _dateLabel(DateTime date) => '${date.month}/${date.day}';
 
-String _metricText(Set? set, {required bool weight}) {
-  if (set == null) return '—';
-  if (weight) {
-    final value = set.weight;
-    if (value == null) return '—';
-    return value == value.roundToDouble()
-        ? value.toInt().toString()
-        : value.toStringAsFixed(1);
-  }
-  if (set.reps == null) return '—';
-  return '${set.reps}';
+String _durationText(Set? set) {
+  final seconds = set?.timeElapsed;
+  if (seconds == null || seconds <= 0) return '—';
+  return formatTimerMinutesSeconds(Duration(seconds: seconds));
 }
 
-class _WorkoutHistoryDataSource extends DataTableSource {
-  _WorkoutHistoryDataSource({required List<Workout> workouts})
+class _TimerWorkoutHistoryDataSource extends DataTableSource {
+  _TimerWorkoutHistoryDataSource({required List<Workout> workouts})
     : _workouts = workouts,
       maxSetCount = _maxSetCount(workouts);
 
@@ -75,42 +69,36 @@ class _WorkoutHistoryDataSource extends DataTableSource {
     return DataRow(
       cells: [
         DataCell(Text(_dateLabel(workout.date))),
-        for (var setNumber = 1; setNumber <= maxSetCount; setNumber++) ...[
-          DataCell(
-            Text(_metricText(_setForNumber(workout, setNumber), weight: true)),
-          ),
-          DataCell(
-            Text(_metricText(_setForNumber(workout, setNumber), weight: false)),
-          ),
-        ],
+        for (var setNumber = 1; setNumber <= maxSetCount; setNumber++)
+          DataCell(Text(_durationText(_setForNumber(workout, setNumber)))),
       ],
     );
   }
 }
 
-/// Read-only paginated table: one row per session, columns Date, W1/R1 … WN/RN.
-class WeightsAndRepsTable2 extends StatefulWidget {
+/// Read-only paginated table: one row per session, columns Date, D1 … DN.
+class TimerTable extends StatefulWidget {
   final List<Workout> workouts;
 
-  const WeightsAndRepsTable2({super.key, required this.workouts});
+  const TimerTable({super.key, required this.workouts});
 
   @override
-  State<WeightsAndRepsTable2> createState() => _WeightsAndRepsTable2State();
+  State<TimerTable> createState() => _TimerTableState();
 }
 
-class _WeightsAndRepsTable2State extends State<WeightsAndRepsTable2> {
+class _TimerTableState extends State<TimerTable> {
   static const int _rowsPerPage = 7;
 
-  late _WorkoutHistoryDataSource _dataSource;
+  late _TimerWorkoutHistoryDataSource _dataSource;
 
   @override
   void initState() {
     super.initState();
-    _dataSource = _WorkoutHistoryDataSource(workouts: widget.workouts);
+    _dataSource = _TimerWorkoutHistoryDataSource(workouts: widget.workouts);
   }
 
   @override
-  void didUpdateWidget(WeightsAndRepsTable2 oldWidget) {
+  void didUpdateWidget(TimerTable oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.workouts != widget.workouts) {
       _dataSource.update(widget.workouts);
@@ -131,10 +119,10 @@ class _WeightsAndRepsTable2State extends State<WeightsAndRepsTable2> {
     }
 
     final maxSetCount = _dataSource.maxSetCount;
-    final columnCount = 1 + maxSetCount * 2;
+    final columnCount = 1 + maxSetCount;
     final minTableWidth =
         _dateColWidth +
-        (maxSetCount * 2 * _metricColWidth) +
+        (maxSetCount * _durationColWidth) +
         (columnCount * _columnSpacing) +
         (_horizontalMargin * 2);
 
@@ -164,14 +152,8 @@ class _WeightsAndRepsTable2State extends State<WeightsAndRepsTable2> {
               availableRowsPerPage: const [_rowsPerPage],
               columns: [
                 const DataColumn(label: Text('DATE')),
-                for (
-                  var setNumber = 1;
-                  setNumber <= maxSetCount;
-                  setNumber++
-                ) ...[
-                  DataColumn(label: Text('W$setNumber')),
-                  DataColumn(label: Text('R$setNumber')),
-                ],
+                for (var setNumber = 1; setNumber <= maxSetCount; setNumber++)
+                  DataColumn(label: Text('D$setNumber')),
               ],
               source: _dataSource,
             ),
