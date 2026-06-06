@@ -105,7 +105,11 @@ class WorkoutService {
   }
 
   Future<Set> persistSet(String workoutId, Set entry) async {
-    final load = trainingLoadForStrengthSet(entry.weight, entry.reps);
+    final load = trainingLoadForSet(
+      weight: entry.weight,
+      reps: entry.reps,
+      timeElapsed: entry.timeElapsed,
+    );
     final id = entry.id ?? _uuid.v4();
 
     await _db
@@ -121,7 +125,11 @@ class WorkoutService {
             timeElapsed: Value(entry.timeElapsed),
           ),
         );
-    return entry.copyWith(id: id, workoutId: workoutId, trainingLoad: load);
+
+    final saved = entry.copyWith(id: id, workoutId: workoutId, trainingLoad: load);
+    final allSets = await loadSets(workoutId);
+    await saveTotalTrainingLoad(workoutId, allSets);
+    return saved;
   }
 
   Future<List<WorkoutTrainingLoadPoint>> lastWorkoutsTrainingLoad(

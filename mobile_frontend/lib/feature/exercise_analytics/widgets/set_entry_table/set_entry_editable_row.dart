@@ -124,7 +124,7 @@ class SetEntryEditableRowState extends State<SetEntryEditableRow> {
       }
     }
 
-    final load = trainingLoadForStrengthSet(weight, reps);
+    final load = trainingLoadForSet(weight: weight, reps: reps);
     final updated = widget.entry.copyWith(
       weight: weight,
       reps: reps,

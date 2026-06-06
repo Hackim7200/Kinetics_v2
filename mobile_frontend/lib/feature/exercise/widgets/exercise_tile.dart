@@ -128,7 +128,11 @@ class ExerciseTile extends StatelessWidget {
           );
           Navigator.of(context).push(
             MaterialPageRoute<void>(
-              builder: (_) => ExerciseAnalyticsScreen2(exercise: detailExercise),
+              builder: (_) => ExerciseAnalyticsScreen2(
+                exercise: detailExercise,
+                routineExercise: routineExercise,
+                routineName: routineName,
+              ),
             ),
           );
         },

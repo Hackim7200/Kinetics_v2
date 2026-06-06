@@ -191,6 +191,8 @@ class _SetEntryTableTimerState extends ConsumerState<SetEntryTableTimer> {
   }
 
   void _finishWorkout({String? workoutId}) {
+    final lastIndex = _sets.length - 1;
+    final lastEntry = _sets[lastIndex];
     setState(() => _workoutFinished = true);
 
     if (workoutId == null) {
@@ -199,12 +201,29 @@ class _SetEntryTableTimerState extends ConsumerState<SetEntryTableTimer> {
     }
 
     _sessionSetsService
-        .saveTotalTrainingLoad(workoutId, _sets)
-        .then((_) {
+        .persistSet(workoutId, lastEntry)
+        .then((saved) async {
+          if (!mounted) return;
+          final updatedSets = List<Set>.from(_sets);
+          updatedSets[lastIndex] = saved;
+          setState(() => _sets[lastIndex] = saved);
+          _notifySetsChanged();
+          try {
+            await _sessionSetsService.saveTotalTrainingLoad(
+              workoutId,
+              updatedSets,
+            );
+          } catch (error, stackTrace) {
+            debugPrint(
+              'WorkoutService total load save failed: $error $stackTrace',
+            );
+          }
           if (mounted) widget.onWorkoutFinished?.call();
         })
         .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('WorkoutService total save failed: $error $stackTrace');
+          debugPrint(
+            'WorkoutService finish persist failed: $error $stackTrace',
+          );
           if (mounted) widget.onWorkoutFinished?.call();
         });
   }

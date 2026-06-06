@@ -120,9 +120,11 @@ class _WeightExerciseDashboard2State
         .toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SetEntryTableWeight(
           exercise: widget.exercise,
+          onSetsChanged: (_) => _loadWorkoutHistory(),
           onWorkoutFinished: _loadWorkoutHistory,
         ),
         const SizedBox(height: 24),
@@ -140,7 +142,6 @@ class _WeightExerciseDashboard2State
           series: series,
           xLabels: xLabels,
         ),
-
         const SizedBox(height: 24),
         Row(
           children: [

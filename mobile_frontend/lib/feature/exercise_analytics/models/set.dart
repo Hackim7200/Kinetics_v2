@@ -19,13 +19,29 @@ double? trainingLoadForStrengthSet(double? weight, int? reps) {
   return weight * reps;
 }
 
-/// Sum of per-set training load (stored or derived from weight × reps).
+/// Per-set metric persisted in [Set.trainingLoad]: strength load or timer seconds.
+double? trainingLoadForSet({
+  double? weight,
+  int? reps,
+  int? timeElapsed,
+}) {
+  final strengthLoad = trainingLoadForStrengthSet(weight, reps);
+  if (strengthLoad != null) return strengthLoad;
+  if (timeElapsed != null && timeElapsed > 0) return timeElapsed.toDouble();
+  return null;
+}
+
+/// Sum of per-set training load (stored or derived from set values).
 double totalTrainingLoadForSets(Iterable<Set> sets) {
   var total = 0.0;
   for (final setEntry in sets) {
     final load =
         setEntry.trainingLoad ??
-        trainingLoadForStrengthSet(setEntry.weight, setEntry.reps);
+        trainingLoadForSet(
+          weight: setEntry.weight,
+          reps: setEntry.reps,
+          timeElapsed: setEntry.timeElapsed,
+        );
     if (load != null) {
       total += load;
     }
@@ -79,7 +95,7 @@ class Set {
   final int? timeElapsed;
   final double? weight;
 
-  /// weight × reps when complete; mirrored in Drift [trainingLoad].
+  /// Strength load (weight × reps) or timer hold seconds; mirrored in Drift [trainingLoad].
   final double? trainingLoad;
 
   const Set({
@@ -95,7 +111,12 @@ class Set {
   /// Maps a persisted Drift [SetEntry] row to the domain [Set] model.
   factory Set.fromDriftRow(SetEntry row) {
     final load =
-        row.trainingLoad ?? trainingLoadForStrengthSet(row.weight, row.reps);
+        row.trainingLoad ??
+        trainingLoadForSet(
+          weight: row.weight,
+          reps: row.reps,
+          timeElapsed: row.timeElapsed,
+        );
     return Set(
       id: row.id,
       workoutId: row.workoutLogId,

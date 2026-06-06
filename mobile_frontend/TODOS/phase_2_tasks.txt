@@ -1,0 +1,2 @@
+[] When the finished workout is not tapped the total training load is not saved to db to plot the graph
+[] total training load should be calculated at every add set this will ensure training load is never left null if finished workout is not done

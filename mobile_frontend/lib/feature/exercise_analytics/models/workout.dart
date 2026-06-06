@@ -38,15 +38,7 @@ class Workout {
   }
 
   /// Stored total, or derived from sets (strength load or timer seconds).
-  double trainingLoad() {
-    double trainingLoad = 0;
-    for (final set in sets) {
-      if (set.trainingLoad != null) {
-        trainingLoad += set.trainingLoad!;
-      }
-    }
-    return trainingLoad;
-  }
+  double trainingLoad() => totalTrainingLoadForSets(sets);
 
   double maxWeightSinceLastXWorkouts(int workouts) {
     //max weight in the last e.g 30 workout

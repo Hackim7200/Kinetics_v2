@@ -9,6 +9,18 @@ const int workoutHistoryRowsPerPage = 7;
 const double workoutHistoryHeadingRowHeight = 36;
 const double workoutHistoryDataRowHeight = 32;
 
+double _minTableWidth({
+  required int displaySetCount,
+  required int metricsPerSet,
+  required double metricColWidth,
+}) {
+  final columnCount = 1 + displaySetCount * metricsPerSet;
+  return workoutHistoryDateColWidth +
+      (displaySetCount * metricsPerSet * metricColWidth) +
+      (columnCount * workoutHistoryColumnSpacing) +
+      (workoutHistoryHorizontalMargin * 2);
+}
+
 int maxSetCountAcrossWorkouts(List<Workout> workouts) {
   var highestSetNumber = 0;
   for (final workout in workouts) {
@@ -196,57 +208,77 @@ class _WorkoutHistoryTableState extends State<WorkoutHistoryTable> {
       );
     }
 
-    final displaySetCount = _displaySetCount;
-    final columnCount = 1 + displaySetCount * widget.metricsPerSet;
-    final minTableWidth =
-        workoutHistoryDateColWidth +
-        (displaySetCount * widget.metricsPerSet * widget.metricColWidth) +
-        (columnCount * workoutHistoryColumnSpacing) +
-        (workoutHistoryHorizontalMargin * 2);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final displaySetCount = _displaySetCount;
+        final metricColumnCount = displaySetCount * widget.metricsPerSet;
+        final minTableWidth = _minTableWidth(
+          displaySetCount: displaySetCount,
+          metricsPerSet: widget.metricsPerSet,
+          metricColWidth: widget.metricColWidth,
+        );
+        final maxWidth = constraints.maxWidth;
+        final needsHorizontalScroll =
+            maxWidth.isFinite && minTableWidth > maxWidth;
+        final tableWidth = needsHorizontalScroll
+            ? minTableWidth
+            : (maxWidth.isFinite ? maxWidth : minTableWidth);
+        final extraWidth = tableWidth - minTableWidth;
+        final metricColWidth = widget.metricColWidth +
+            (metricColumnCount > 0 && extraWidth > 0
+                ? extraWidth / metricColumnCount
+                : 0);
 
-    _dataSource.metricTextStyle = Theme.of(context).textTheme.bodyMedium;
+        _dataSource.metricTextStyle = Theme.of(context).textTheme.bodyMedium;
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: minTableWidth,
-        child: PaginatedDataTable(
-          key: ValueKey('$displaySetCount-${widget.workouts.length}'),
-          showCheckboxColumn: false,
-          columnSpacing: workoutHistoryColumnSpacing,
-          horizontalMargin: workoutHistoryHorizontalMargin,
-          headingRowHeight: workoutHistoryHeadingRowHeight,
-          dataRowMinHeight: workoutHistoryDataRowHeight,
-          dataRowMaxHeight: workoutHistoryDataRowHeight,
-          initialFirstRowIndex: lastPageFirstRowIndex(
-            widget.workouts.length,
-            workoutHistoryRowsPerPage,
-          ),
-          rowsPerPage: workoutHistoryRowsPerPage,
-          availableRowsPerPage: const [workoutHistoryRowsPerPage],
-          columns: [
-            DataColumn(
-              columnWidth: FixedColumnWidth(workoutHistoryDateColWidth),
-              label: const Text('DATE', textAlign: TextAlign.center),
+        final table = SizedBox(
+          width: tableWidth,
+          child: PaginatedDataTable(
+            key: ValueKey('$displaySetCount-${widget.workouts.length}-$tableWidth'),
+            showCheckboxColumn: false,
+            columnSpacing: workoutHistoryColumnSpacing,
+            horizontalMargin: workoutHistoryHorizontalMargin,
+            headingRowHeight: workoutHistoryHeadingRowHeight,
+            dataRowMinHeight: workoutHistoryDataRowHeight,
+            dataRowMaxHeight: workoutHistoryDataRowHeight,
+            initialFirstRowIndex: lastPageFirstRowIndex(
+              widget.workouts.length,
+              workoutHistoryRowsPerPage,
             ),
-            for (var setNumber = 1; setNumber <= displaySetCount; setNumber++)
-              for (
-                var metricIndex = 0;
-                metricIndex < widget.metricsPerSet;
-                metricIndex++
-              )
-                DataColumn(
-                  columnWidth: FixedColumnWidth(widget.metricColWidth),
-                  label: Text(
-                    widget.metricColumnLabel(setNumber, metricIndex),
-                    textAlign: TextAlign.center,
-                    style: _metricTextStyle(setNumber, metricIndex),
+            rowsPerPage: workoutHistoryRowsPerPage,
+            availableRowsPerPage: const [workoutHistoryRowsPerPage],
+            columns: [
+              DataColumn(
+                columnWidth: FixedColumnWidth(workoutHistoryDateColWidth),
+                label: const Text('DATE', textAlign: TextAlign.center),
+              ),
+              for (var setNumber = 1; setNumber <= displaySetCount; setNumber++)
+                for (
+                  var metricIndex = 0;
+                  metricIndex < widget.metricsPerSet;
+                  metricIndex++
+                )
+                  DataColumn(
+                    columnWidth: FixedColumnWidth(metricColWidth),
+                    label: Text(
+                      widget.metricColumnLabel(setNumber, metricIndex),
+                      textAlign: TextAlign.center,
+                      style: _metricTextStyle(setNumber, metricIndex),
+                    ),
                   ),
-                ),
-          ],
-          source: _dataSource,
-        ),
-      ),
+            ],
+            source: _dataSource,
+          ),
+        );
+
+        if (needsHorizontalScroll) {
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: table,
+          );
+        }
+        return table;
+      },
     );
   }
 }

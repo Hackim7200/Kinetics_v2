@@ -120,12 +120,13 @@ class _TimerExerciseDashboard2State
         .toList();
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SetEntryTableTimer(
           exercise: widget.exercise,
+          onSetsChanged: (_) => _loadWorkoutHistory(),
           onWorkoutFinished: _loadWorkoutHistory,
         ),
-
         const SizedBox(height: 24),
         ProgressGraph(
           title: 'PROGRESS',

@@ -6,7 +6,7 @@ class WorkoutLogs extends Table {
   TextColumn get id => text()();
   TextColumn get exerciseId => text().references(RoutineExercises, #id)();
   DateTimeColumn get date => dateTime()();
-  RealColumn get totalTrainingLoad => real().nullable()();
+  RealColumn get totalTrainingLoad => real().nullable()(); //for graph
 
   @override
   Set<Column<Object>> get primaryKey => {id};
