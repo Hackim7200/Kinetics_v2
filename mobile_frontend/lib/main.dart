@@ -12,7 +12,7 @@ import 'package:mobile_frontend/feature/auth/data/onboarding_pref.dart';
 import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); 
+  WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

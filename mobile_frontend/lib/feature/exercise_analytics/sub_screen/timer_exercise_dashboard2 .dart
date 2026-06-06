@@ -7,10 +7,9 @@ import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/data/workout_service.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/history_table/timer_table.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/widgets/history_table/weight_and_reps_table2.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/progress_graph.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/set_entry_table/set_entry_table_timer.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/widgets/set_entry_table/set_entry_table_weight.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/small_stat_card.dart';
 
 /// Strength session screen: set entry table, progress graph, and history table.
 class TimerExerciseDashboard2 extends ConsumerStatefulWidget {
@@ -122,6 +121,11 @@ class _TimerExerciseDashboard2State
 
     return Column(
       children: [
+        SetEntryTableTimer(
+          exercise: widget.exercise,
+          onWorkoutFinished: _loadWorkoutHistory,
+        ),
+
         const SizedBox(height: 24),
         ProgressGraph(
           title: 'PROGRESS',
@@ -136,6 +140,28 @@ class _TimerExerciseDashboard2State
                   .toString(),
           series: series,
           xLabels: xLabels,
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                label: 'MAX WEIGHT',
+                value: 'X',
+                unit: 'KG',
+                sublabel: 'last 30 days',
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: StatCard(
+                label: 'TRAINING LOAD',
+                value: 'X',
+                // unit: 'kg×rep',
+                sublabel: 'today',
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         TimerTable(workouts: workoutHistory, minSetCount: _maxSets),

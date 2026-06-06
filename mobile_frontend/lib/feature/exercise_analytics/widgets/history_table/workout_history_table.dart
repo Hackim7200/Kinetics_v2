@@ -3,9 +3,11 @@ import 'package:mobile_frontend/feature/exercise_analytics/models/set.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
 
 const double workoutHistoryDateColWidth = 92;
-const double workoutHistoryColumnSpacing = 12;
-const double workoutHistoryHorizontalMargin = 8;
+const double workoutHistoryColumnSpacing = 4;
+const double workoutHistoryHorizontalMargin = 4;
 const int workoutHistoryRowsPerPage = 7;
+const double workoutHistoryHeadingRowHeight = 36;
+const double workoutHistoryDataRowHeight = 32;
 
 int maxSetCountAcrossWorkouts(List<Workout> workouts) {
   var highestSetNumber = 0;
@@ -29,28 +31,53 @@ Set? setForWorkoutAndNumber(Workout workout, int setNumber) {
   return null;
 }
 
-String workoutHistoryDateLabel(DateTime date) => '${date.month}/${date.day}';
+const _workoutHistoryMonthNames = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+String workoutHistoryDateLabel(DateTime date) =>
+    '${date.day} ${_workoutHistoryMonthNames[date.month - 1]}';
 
 class _WorkoutHistoryDataSource extends DataTableSource {
   _WorkoutHistoryDataSource({
     required List<Workout> workouts,
     required int displaySetCount,
     required this.metricsPerSet,
-    required this.metricColWidth,
     required this.metricCellText,
+    this.metricIsBold,
   }) : _workouts = workouts,
        _displaySetCount = displaySetCount;
 
   List<Workout> _workouts;
   int _displaySetCount;
   final int metricsPerSet;
-  final double metricColWidth;
   final String Function(Set? set, int metricIndex) metricCellText;
+  final bool Function(int setNumber, int metricIndex)? metricIsBold;
+  TextStyle? metricTextStyle;
 
   void update(List<Workout> workouts, int displaySetCount) {
     _workouts = workouts;
     _displaySetCount = displaySetCount;
     notifyListeners();
+  }
+
+  TextStyle _metricTextStyle(int setNumber, int metricIndex) {
+    final isBold = metricIsBold?.call(setNumber, metricIndex) ?? false;
+    final baseStyle = metricTextStyle ?? const TextStyle();
+    return baseStyle.copyWith(
+      fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+    );
   }
 
   @override
@@ -70,26 +97,21 @@ class _WorkoutHistoryDataSource extends DataTableSource {
     return DataRow(
       cells: [
         DataCell(
-          SizedBox(
-            width: workoutHistoryDateColWidth,
-            child: Text(
-              workoutHistoryDateLabel(workout.date),
-              textAlign: TextAlign.center,
-            ),
+          Text(
+            workoutHistoryDateLabel(workout.date),
+            textAlign: TextAlign.center,
           ),
         ),
         for (var setNumber = 1; setNumber <= _displaySetCount; setNumber++)
           for (var metricIndex = 0; metricIndex < metricsPerSet; metricIndex++)
             DataCell(
-              SizedBox(
-                width: metricColWidth,
-                child: Text(
-                  metricCellText(
-                    setForWorkoutAndNumber(workout, setNumber),
-                    metricIndex,
-                  ),
-                  textAlign: TextAlign.center,
+              Text(
+                metricCellText(
+                  setForWorkoutAndNumber(workout, setNumber),
+                  metricIndex,
                 ),
+                textAlign: TextAlign.center,
+                style: _metricTextStyle(setNumber, metricIndex),
               ),
             ),
       ],
@@ -105,6 +127,7 @@ class WorkoutHistoryTable extends StatefulWidget {
   final int minSetCount;
   final String Function(int setNumber, int metricIndex) metricColumnLabel;
   final String Function(Set? set, int metricIndex) metricCellText;
+  final bool Function(int setNumber, int metricIndex)? metricIsBold;
 
   const WorkoutHistoryTable({
     super.key,
@@ -114,6 +137,7 @@ class WorkoutHistoryTable extends StatefulWidget {
     this.minSetCount = 0,
     required this.metricColumnLabel,
     required this.metricCellText,
+    this.metricIsBold,
   });
 
   @override
@@ -137,8 +161,8 @@ class _WorkoutHistoryTableState extends State<WorkoutHistoryTable> {
       workouts: widget.workouts,
       displaySetCount: _displaySetCount,
       metricsPerSet: widget.metricsPerSet,
-      metricColWidth: widget.metricColWidth,
       metricCellText: widget.metricCellText,
+      metricIsBold: widget.metricIsBold,
     );
   }
 
@@ -149,6 +173,14 @@ class _WorkoutHistoryTableState extends State<WorkoutHistoryTable> {
         oldWidget.minSetCount != widget.minSetCount) {
       _dataSource.update(widget.workouts, _displaySetCount);
     }
+  }
+
+  TextStyle _metricTextStyle(int setNumber, int metricIndex) {
+    final isBold = widget.metricIsBold?.call(setNumber, metricIndex) ?? false;
+    final baseStyle = Theme.of(context).textTheme.bodyMedium;
+    return (baseStyle ?? const TextStyle()).copyWith(
+      fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+    );
   }
 
   @override
@@ -172,6 +204,8 @@ class _WorkoutHistoryTableState extends State<WorkoutHistoryTable> {
         (columnCount * workoutHistoryColumnSpacing) +
         (workoutHistoryHorizontalMargin * 2);
 
+    _dataSource.metricTextStyle = Theme.of(context).textTheme.bodyMedium;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: SizedBox(
@@ -181,6 +215,9 @@ class _WorkoutHistoryTableState extends State<WorkoutHistoryTable> {
           showCheckboxColumn: false,
           columnSpacing: workoutHistoryColumnSpacing,
           horizontalMargin: workoutHistoryHorizontalMargin,
+          headingRowHeight: workoutHistoryHeadingRowHeight,
+          dataRowMinHeight: workoutHistoryDataRowHeight,
+          dataRowMaxHeight: workoutHistoryDataRowHeight,
           initialFirstRowIndex: lastPageFirstRowIndex(
             widget.workouts.length,
             workoutHistoryRowsPerPage,
@@ -189,10 +226,8 @@ class _WorkoutHistoryTableState extends State<WorkoutHistoryTable> {
           availableRowsPerPage: const [workoutHistoryRowsPerPage],
           columns: [
             DataColumn(
-              label: SizedBox(
-                width: workoutHistoryDateColWidth,
-                child: const Text('DATE', textAlign: TextAlign.center),
-              ),
+              columnWidth: FixedColumnWidth(workoutHistoryDateColWidth),
+              label: const Text('DATE', textAlign: TextAlign.center),
             ),
             for (var setNumber = 1; setNumber <= displaySetCount; setNumber++)
               for (
@@ -201,12 +236,11 @@ class _WorkoutHistoryTableState extends State<WorkoutHistoryTable> {
                 metricIndex++
               )
                 DataColumn(
-                  label: SizedBox(
-                    width: widget.metricColWidth,
-                    child: Text(
-                      widget.metricColumnLabel(setNumber, metricIndex),
-                      textAlign: TextAlign.center,
-                    ),
+                  columnWidth: FixedColumnWidth(widget.metricColWidth),
+                  label: Text(
+                    widget.metricColumnLabel(setNumber, metricIndex),
+                    textAlign: TextAlign.center,
+                    style: _metricTextStyle(setNumber, metricIndex),
                   ),
                 ),
           ],

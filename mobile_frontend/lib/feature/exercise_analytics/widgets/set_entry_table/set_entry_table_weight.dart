@@ -181,7 +181,9 @@ class _SetEntryTableWeightState extends ConsumerState<SetEntryTableWeight> {
           if (mounted) widget.onWorkoutFinished?.call();
         })
         .catchError((Object error, StackTrace stackTrace) {
-          debugPrint('WorkoutService finish persist failed: $error $stackTrace');
+          debugPrint(
+            'WorkoutService finish persist failed: $error $stackTrace',
+          );
           if (mounted) widget.onWorkoutFinished?.call();
         });
   }

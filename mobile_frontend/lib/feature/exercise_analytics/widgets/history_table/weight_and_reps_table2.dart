@@ -3,7 +3,7 @@ import 'package:mobile_frontend/feature/exercise_analytics/models/set.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/history_table/workout_history_table.dart';
 
-const double _weightMetricColWidth = 48;
+const double _weightMetricColWidth = 30;
 
 String _weightOrRepsText(Set? set, {required bool weight}) {
   if (set == null) return '—';
@@ -34,6 +34,7 @@ class WeightsAndRepsTable2 extends StatelessWidget {
           metricIndex == 0 ? 'W$setNumber' : 'R$setNumber',
       metricCellText: (set, metricIndex) =>
           _weightOrRepsText(set, weight: metricIndex == 0),
+      metricIsBold: (_, metricIndex) => metricIndex.isEven,
     );
   }
 }

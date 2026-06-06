@@ -9,6 +9,7 @@ import 'package:mobile_frontend/feature/exercise_analytics/models/workout.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/history_table/weight_and_reps_table2.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/progress_graph.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/widgets/set_entry_table/set_entry_table_weight.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/widgets/small_stat_card.dart';
 
 /// Strength session screen: set entry table, progress graph, and history table.
 class WeightExerciseDashboard2 extends ConsumerStatefulWidget {
@@ -138,6 +139,29 @@ class _WeightExerciseDashboard2State
                   .toString(),
           series: series,
           xLabels: xLabels,
+        ),
+
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: StatCard(
+                label: 'MAX WEIGHT',
+                value: 'X',
+                unit: 'KG',
+                sublabel: 'last 30 days',
+              ),
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: StatCard(
+                label: 'TRAINING LOAD',
+                value: 'X',
+                // unit: 'kg×rep',
+                sublabel: 'today',
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
         WeightsAndRepsTable2(workouts: workoutHistory),
