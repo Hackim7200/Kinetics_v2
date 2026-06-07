@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/database/database.dart';
-import 'package:mobile_frontend/database/database_provider.dart';
 import 'package:mobile_frontend/feature/exercise/widgets/add_exercise_button.dart';
 import 'package:mobile_frontend/feature/exercise/widgets/exercise_tile.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/data/workout_service.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/data/workout_stats.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/data/repositories/workout_repository.dart';
 import 'package:mobile_frontend/feature/routine/data/routine_exercise_service.dart';
 
 class ExerciseList extends ConsumerWidget {
@@ -26,7 +24,7 @@ class ExerciseList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appTheme = Theme.of(context).colorScheme;
-    final sessionSets = WorkoutService(ref.read(appDatabaseProvider));
+    final workoutRepository = ref.read(workoutRepositoryProvider);
 
     return StreamBuilder<List<RoutineExercise>>(
       stream: routineExerciseService.watchForRoutine(routineId),
@@ -100,7 +98,6 @@ class ExerciseList extends ConsumerWidget {
               StreamBuilder<List<WorkoutLog>>(
                 stream: routineExerciseService.watchAllWorkoutLogs(),
                 builder: (context, logSnap) {
-                  final logs = logSnap.data ?? const <WorkoutLog>[];
                   return Column(
                     children: [
                       for (var i = 0; i < routineExercises.length; i++)
@@ -108,8 +105,7 @@ class ExerciseList extends ConsumerWidget {
                           routineExercise: routineExercises[i],
                           listIndex: i,
                           routineName: routineName,
-                          logs: logs,
-                          sessionSets: sessionSets,
+                          workoutRepository: workoutRepository,
                         ),
                     ],
                   );
@@ -128,15 +124,13 @@ class _ExerciseTileWithStats extends StatelessWidget {
     required this.routineExercise,
     required this.listIndex,
     required this.routineName,
-    required this.logs,
-    required this.sessionSets,
+    required this.workoutRepository,
   });
 
   final RoutineExercise routineExercise;
   final int listIndex;
   final String routineName;
-  final List<WorkoutLog> logs;
-  final WorkoutService sessionSets;
+  final WorkoutRepository workoutRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -152,10 +146,8 @@ class _ExerciseTileWithStats extends StatelessWidget {
     }
 
     return FutureBuilder<double?>(
-      future: WorkoutStats.trainingLoadChangePercentForLatestSession(
+      future: workoutRepository.latestSessionTrainingLoadChangePercent(
         routineExercise.id,
-        logs,
-        sessionSets.loadSets,
       ),
       builder: (context, snap) {
         return Padding(

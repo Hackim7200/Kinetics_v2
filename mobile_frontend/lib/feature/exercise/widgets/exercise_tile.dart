@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
 import 'package:mobile_frontend/database/database.dart';
 import 'package:mobile_frontend/feature/exercise/models/exercise_ui_mapper.dart';
-import 'package:mobile_frontend/feature/exercise_analytics/exercise_analytics_screen2.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/presentation/pages/exercise_analytics_screen.dart';
 
 class _ExerciseProgressStyle {
   final Color dotColor;
