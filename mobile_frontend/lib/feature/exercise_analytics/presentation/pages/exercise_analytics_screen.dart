@@ -1,51 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
-import 'package:mobile_frontend/database/database.dart';
-import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
-import 'package:mobile_frontend/feature/exercise/screens/edit_exercise_screen.dart';
+import 'package:mobile_frontend/feature/routine_exercise/domain/entities/routine_exercise.dart';
+import 'package:mobile_frontend/feature/routine_exercise/presentation/pages/edit_exercise_screen.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/domain/use_cases/map_routine_exercise_for_session.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/presentation/pages/timer_exercise_dashboard.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/presentation/pages/weight_exercise_dashboard.dart';
 
 class ExerciseAnalyticsScreen2 extends StatelessWidget {
-  final Exercise exercise;
-  final RoutineExercise? routineExercise;
+  final RoutineExercise routineExercise;
+  final int listIndex;
   final String? routineName;
 
   const ExerciseAnalyticsScreen2({
     super.key,
-    required this.exercise,
-    this.routineExercise,
+    required this.routineExercise,
+    required this.listIndex,
     this.routineName,
   });
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final exercise = mapRoutineExerciseForSession(routineExercise, listIndex);
 
     return Scaffold(
       appBar: KineticAppBar(
         showBackButton: true,
-        actions: routineExercise == null
-            ? null
-            : [
-                IconButton(
-                  tooltip: 'Edit exercise',
-                  onPressed: () async {
-                    final result = await Navigator.of(context).push<String>(
-                      MaterialPageRoute<String>(
-                        builder: (_) => EditExerciseScreen(
-                          routineExercise: routineExercise!,
-                          routineName: routineName,
-                        ),
-                      ),
-                    );
-                    if (!context.mounted) return;
-                    if (result == 'deleted') Navigator.of(context).pop();
-                  },
-                  icon: Icon(Icons.edit_outlined, color: cs.onSurface),
+        actions: [
+          IconButton(
+            tooltip: 'Edit exercise',
+            onPressed: () async {
+              final result = await Navigator.of(context).push<String>(
+                MaterialPageRoute<String>(
+                  builder: (_) => EditExerciseScreen(
+                    routineExercise: routineExercise,
+                    routineName: routineName,
+                  ),
                 ),
-              ],
+              );
+              if (!context.mounted) return;
+              if (result == 'deleted') Navigator.of(context).pop();
+            },
+            icon: Icon(Icons.edit_outlined, color: cs.onSurface),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 120),

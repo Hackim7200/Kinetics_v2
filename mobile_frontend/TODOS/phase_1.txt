@@ -1,0 +1,27 @@
+STAGE 1 — Foundation (core local app)
+=====================================
+Goal: Working local-only app with clean architecture.
+
+PROGRESS: 7/7 features · 5/8 architecture checkpoints (2 partial, 1 optional)
+Note: Hard-delete of empty workouts still in code — moved to Stage 2.
+
+FEATURES — 7/7 complete
+-----------------------
+[x] Exercise analytics: strength + timer sessions
+[x] Workouts scoped per routine exercise
+[x] Empty workouts hidden from UI (hasLoggedData filter in listWorkouts)
+[x] Lazy workout creation — row created on first real set, not on screen open
+[x] totalTrainingLoad saved on every persistSet (persistSet → saveTotalTrainingLoad)
+[x] Timer Log Set flow (no false "open from routine" block)
+[x] Dummy past workout data (strength + timer) for debug
+
+ARCHITECTURE — SoC — 5/6 complete, 2 partial
+--------------------------------------------
+[x] Data: Drift only in repositories + local sources (none in presentation/)
+[x] exercise_analytics: domain / data / state / presentation split
+[x] auth: presentation / domain / data
+[x] routine: presentation / domain / data
+[x] routine_exercise: presentation / domain / data
+[x] counter: state/counter_notifier
+[~] circuit: domain / data / presentation exist — circuit_play_screen timer/audio logic still in presentation (no state/ layer)
+[ ] Presentation uses WorkoutMetrics formatters in dashboards (acceptable for now; optional view-model layer later)

@@ -22,8 +22,10 @@ class ProgressGraph extends StatelessWidget {
     required this.xLabels,
   });
 
-  bool get _hasPercent =>
-      percentChangeDisplay != '—' && percentChangeDisplay.isNotEmpty;
+  bool get _hasPercent {
+    final display = percentChangeDisplay;
+    return display != '—' && display != 'Stable' && display.isNotEmpty;
+  }
 
   @override
   Widget build(BuildContext context) {

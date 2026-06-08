@@ -15,8 +15,8 @@ class ProgressGraphData {
   /// X-axis labels, e.g. `"6/7"` from each workout date.
   final List<String> xLabels;
 
-  /// Change vs the prior session; `0` when unknown or only one session.
-  final double percentChange;
+  /// Change vs the prior session with data; `null` when unknown.
+  final double? percentChange;
 
   /// Builds chart data from a list of workouts (oldest → newest).
   factory ProgressGraphData.fromWorkouts(List<Workout> workouts) {
@@ -24,13 +24,7 @@ class ProgressGraphData {
     final xLabels = workouts
         .map((workout) => '${workout.date.month}/${workout.date.day}')
         .toList();
-    final percentChange = workouts.length > 1
-        ? (WorkoutMetrics.percentChangeBetween(
-                workouts[workouts.length - 2],
-                workouts[workouts.length - 1],
-              ) ??
-              0.0)
-        : 0.0;
+    final percentChange = WorkoutMetrics.latestSessionPercentChange(workouts);
 
     return ProgressGraphData(
       series: series,

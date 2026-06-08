@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mobile_frontend/common/utils/timer_routine_target.dart';
-import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/domain/entities/exercise.dart';
 
 /// `mm:ss` (total minutes, 0–59 seconds within the minute remainder).
 String formatTimerMinutesSeconds(Duration d) {

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
-import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/domain/entities/exercise.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/data/repositories/workout_repository.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/domain/entities/workout.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/domain/entities/progress_graph_data.dart';
@@ -34,13 +34,10 @@ class _WeightExerciseDashboardState
   }
 
   Future<void> _loadWorkoutHistory() async {
-    final routineExerciseId = widget.exercise.routineExerciseId;
-    if (routineExerciseId == null) return;
-
     try {
       final sessions = await ref
           .read(workoutRepositoryProvider)
-          .listWorkouts(routineExerciseId);
+          .listWorkouts(widget.exercise.routineExerciseId);
       if (!mounted) return;
       setState(() => workoutHistory = sessions);
     } catch (error, stackTrace) {
@@ -52,26 +49,12 @@ class _WeightExerciseDashboardState
       TrainingTargetInput.clampConfiguredSets(widget.exercise.sets);
 
   Future<void> _insertRandomDummyPastWorkout() async {
-    final routineExerciseId = widget.exercise.routineExerciseId;
-    if (routineExerciseId == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Open this exercise from a routine to add test data.'),
-        ),
-      );
-      return;
-    }
-
     try {
       final sessionDate = await ref
           .read(workoutRepositoryProvider)
           .insertRandomDummyStrengthWorkoutInPast(
-            routineExerciseId: routineExerciseId,
+            routineExerciseId: widget.exercise.routineExerciseId,
             setCount: _maxSets,
-            weightHintKg: widget.exercise.weight > 0
-                ? widget.exercise.weight
-                : 60,
             repsHint: widget.exercise.reps > 0 ? widget.exercise.reps : 8,
           );
       if (!mounted) return;
@@ -122,7 +105,8 @@ class _WeightExerciseDashboardState
         ProgressGraph(
           title: 'PROGRESS',
           subtitle: '· training load',
-          percentChangeDisplay: graphData.percentChange.toString(),
+          percentChangeDisplay:
+              WorkoutMetrics.formatPercentChange(graphData.percentChange),
           series: graphData.series,
           xLabels: graphData.xLabels,
         ),

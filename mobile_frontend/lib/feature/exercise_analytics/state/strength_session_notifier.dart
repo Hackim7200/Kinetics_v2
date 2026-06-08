@@ -17,6 +17,20 @@ class StrengthSessionNotifier extends _$StrengthSessionNotifier {
 
   WorkoutRepository get _workouts => ref.read(workoutRepositoryProvider);
 
+  Future<String?> _ensureWorkoutId() async {
+    final routineExerciseId = _routineExerciseId;
+    if (routineExerciseId == null) return null;
+
+    final workoutId = await _workouts.ensureWorkoutIdForSession(
+      routineExerciseId: routineExerciseId,
+      currentWorkoutId: state.workoutId,
+    );
+    if (state.workoutId != workoutId) {
+      state = state.copyWith(workoutId: workoutId);
+    }
+    return workoutId;
+  }
+
   @override
   StrengthSessionState build(String? routineExerciseId, int maxSets) {
     _routineExerciseId = routineExerciseId;
@@ -34,14 +48,15 @@ class StrengthSessionNotifier extends _$StrengthSessionNotifier {
 
     state = state.copyWith(sessionReady: false);
     try {
-      final workout = await _workouts.getOrCreateTodaysWorkout(
+      final workout = await _workouts.findTodaysWorkoutWithLoggedData(
         routineExerciseId,
       );
-      final loaded = await _workouts.loadSets(workout.id);
-      var next = state.copyWith(workoutId: workout.id);
-
-      if (loaded.isNotEmpty && next.hasPristineFirstRow) {
-        next = next.copyWith(sets: loaded);
+      var next = state;
+      if (workout != null) {
+        next = state.copyWith(workoutId: workout.id);
+        if (workout.sets.isNotEmpty && next.hasPristineFirstRow) {
+          next = next.copyWith(sets: workout.sets);
+        }
       }
 
       state = next.copyWith(
@@ -59,7 +74,9 @@ class StrengthSessionNotifier extends _$StrengthSessionNotifier {
     final sets = List<Set>.from(state.sets)..[index] = entry;
     state = state.copyWith(sets: sets);
 
-    final workoutId = state.workoutId;
+    if (state.workoutId == null && !strengthSetHasValues(entry)) return;
+
+    final workoutId = await _ensureWorkoutId();
     if (workoutId == null) return;
 
     try {
@@ -73,8 +90,8 @@ class StrengthSessionNotifier extends _$StrengthSessionNotifier {
 
   /// **ADD SET**: persist the current row, then append a new empty row.
   Future<void> addNextSet() async {
-    final workoutId = state.workoutId;
-    if (workoutId == null) {
+    final lastRow = state.sets.last;
+    if (state.workoutId == null && !strengthSetHasValues(lastRow)) {
       final nextNumber = state.sets.length + 1;
       state = state.copyWith(
         sets: [
@@ -84,6 +101,9 @@ class StrengthSessionNotifier extends _$StrengthSessionNotifier {
       );
       return;
     }
+
+    final workoutId = await _ensureWorkoutId();
+    if (workoutId == null) return;
 
     state = state.copyWith(addingSet: true);
     try {
@@ -109,7 +129,13 @@ class StrengthSessionNotifier extends _$StrengthSessionNotifier {
   Future<void> finish() async {
     if (state.workoutFinished) return;
 
-    final workoutId = state.workoutId;
+    if (state.workoutId == null &&
+        !strengthSetHasValues(state.sets.last)) {
+      state = state.copyWith(workoutFinished: true);
+      return;
+    }
+
+    final workoutId = await _ensureWorkoutId();
     if (workoutId == null) {
       state = state.copyWith(workoutFinished: true);
       return;

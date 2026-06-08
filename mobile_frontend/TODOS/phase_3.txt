@@ -1,0 +1,48 @@
+STAGE 3 — Cloud sync layer
+==========================
+Goal: Multi-device sync without re-download loops or data loss.
+Start only after Stage 2 is complete.
+
+── DESIGN PRINCIPLES (decide before coding) ──────────────────────────────────
+
+[ ] Avoid immediate hard-delete — causes re-download loops and race conditions
+[ ] Filter empty workouts in UI; do not delete data sync may still need
+[ ] Deletion must be multi-stage: tombstone → sync → grace period → hard purge
+[ ] Never hard-delete past workouts with data without a propagated tombstone
+[ ] Workout + sets are separate sync entities (sets can arrive after workout)
+[ ] Local orphan empty rows are OK — local purge job cleans later (not on read)
+
+── STRATEGIES (decide before coding) ─────────────────────────────────────────
+
+[ ] Upload strategy:
+      Option A — upload workout only after first set with data (simplest)
+      Option B — upload workout shell early, sets later (needs tombstones + grace)
+[ ] Conflict strategy: last-write-wins per set id (recommended)
+[ ] Same-day session across devices: calendar day + timezone policy
+[ ] Retention: cloud purge job for old tombstones; local purge after sync settled
+
+── SCHEMA ────────────────────────────────────────────────────────────────────
+
+[ ] WorkoutLogs + SetEntries: updatedAt, deletedAt (tombstone), syncStatus
+      syncStatus: local_only | pending_upload | synced | pending_download
+
+── SYNC PIPELINE ─────────────────────────────────────────────────────────────
+
+[ ] Upload/download for workouts and sets (workout before sets, or batched)
+[ ] Apply remote tombstones on pull
+[ ] Recompute totalTrainingLoad after set sync
+
+── KNOWN RISKS TO SOLVE ──────────────────────────────────────────────────────
+
+[ ] Empty workout uploaded then locally deleted → cloud re-downloads it
+[ ] Workout synced before sets → other device adds sets during "empty" window
+[ ] Cleanup of past workouts without tombstone → sync discrepancies across devices
+[ ] Partial delete (workout gone, sets remain) → broken parent/child tree
+
+── PURGE JOBS (after sync works) ─────────────────────────────────────────────
+
+[ ] Local purge: after successful sync, eligible rows only
+      - local_only + empty + older than grace period
+      - tombstoned + synced + past grace period
+      - never while pending_upload / pending_download
+[ ] Cloud purge: scheduled retention on tombstoned records (e.g. 30–90 days)

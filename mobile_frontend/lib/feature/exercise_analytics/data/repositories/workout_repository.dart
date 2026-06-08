@@ -70,18 +70,48 @@ class WorkoutRepository {
     return best;
   }
 
-  Future<Workout> getOrCreateTodaysWorkout(String routineExerciseId) async {
+  Future<void> _deleteEmptyWorkout(String workoutId) async {
+    await _local.deleteSetEntriesForWorkout(workoutId);
+    await _local.deleteWorkoutLog(workoutId);
+  }
+
+  /// Today's session only when it already has logged sets; removes empty legacy rows.
+  Future<Workout?> findTodaysWorkoutWithLoggedData(
+    String routineExerciseId,
+  ) async {
+    final row = await _findTodaysWorkout(routineExerciseId);
+    if (row == null) return null;
+
+    final sets = await loadSets(row.id);
+    final workout = _workoutFromRow(row, sets);
+    if (WorkoutMetrics.hasLoggedData(workout)) return workout;
+
+    await _deleteEmptyWorkout(row.id);
+    return null;
+  }
+
+  /// Creates a workout log on first persist; reuses today's row when it has data.
+  Future<String> ensureWorkoutIdForSession({
+    required String routineExerciseId,
+    String? currentWorkoutId,
+  }) async {
+    if (currentWorkoutId != null) return currentWorkoutId;
+
     final existing = await _findTodaysWorkout(routineExerciseId);
-    if (existing != null) return _workoutFromRow(existing, const []);
+    if (existing != null) {
+      final sets = await loadSets(existing.id);
+      final workout = _workoutFromRow(existing, sets);
+      if (WorkoutMetrics.hasLoggedData(workout)) return existing.id;
+      await _deleteEmptyWorkout(existing.id);
+    }
 
     final id = _uuid.v4();
-    final date = DateTime.now().toUtc();
     await _local.insertWorkoutLog(
       id: id,
       exerciseId: routineExerciseId,
-      date: date,
+      date: DateTime.now().toUtc(),
     );
-    return Workout(id: id, exerciseId: routineExerciseId, date: date.toLocal());
+    return id;
   }
 
   Future<List<Set>> loadSets(String workoutId) async {
@@ -131,13 +161,20 @@ class WorkoutRepository {
     );
     if (rows.isEmpty) return [];
 
-    final selected = (limit != null ? rows.take(limit) : rows).toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
-
     final workouts = <Workout>[];
-    for (final row in selected) {
+    for (final row in rows) {
       final sets = await loadSets(row.id);
-      workouts.add(_workoutFromRow(row, sets));
+      final workout = _workoutFromRow(row, sets);
+      if (WorkoutMetrics.hasLoggedData(workout)) {
+        workouts.add(workout);
+      } else {
+        await _deleteEmptyWorkout(row.id);
+      }
+    }
+
+    workouts.sort((a, b) => a.date.compareTo(b.date));
+    if (limit != null && workouts.length > limit) {
+      return workouts.sublist(workouts.length - limit);
     }
     return workouts;
   }
@@ -162,48 +199,19 @@ class WorkoutRepository {
     return best;
   }
 
-  /// Strength volume change for the most recent session with data vs the prior one.
+  /// Volume change for the newest session with data vs the prior session with data.
   Future<double?> latestSessionTrainingLoadChangePercent(
     String routineExerciseId,
   ) async {
-    final rows = await _local.workoutLogsForExercise(routineExerciseId);
-    final ordered = rows.toList()..sort((a, b) => b.date.compareTo(a.date));
-
-    for (var index = 0; index < ordered.length; index++) {
-      final currentTotal = await _sessionTotal(ordered[index]);
-      if (currentTotal <= 0) continue;
-
-      if (index + 1 < ordered.length) {
-        final previousTotal = await _sessionTotal(ordered[index + 1]);
-        if (previousTotal > 0) {
-          return WorkoutMetrics.trainingLoadChangePercentVsPrevious(
-            currentTotal,
-            previousTotal,
-          );
-        }
-      }
-    }
-    return null;
+    final workouts = await listWorkouts(routineExerciseId);
+    return WorkoutMetrics.latestSessionPercentChange(workouts);
   }
 
-  Future<double> _sessionTotal(drift.WorkoutLog row) async {
-    final stored = row.totalTrainingLoad;
-    if (stored != null) return stored;
-    final sets = await loadSets(row.id);
-    return aggregateMetricForWorkoutSets(sets);
-  }
-
-  /// Inserts a completed strength session on a random free day in the past.
-  /// Returns the local session [DateTime], or null if no day is available.
-  /// For dev/testing only.
-  Future<DateTime?> insertRandomDummyStrengthWorkoutInPast({
+  /// Picks a random past calendar day with no logged session for this exercise.
+  Future<DateTime?> _pickRandomOpenPastSessionLocal({
     required String routineExerciseId,
-    required int setCount,
-    double weightHintKg = 60,
-    int repsHint = 8,
     int maxDaysAgo = 90,
   }) async {
-    final setsToCreate = setCount.clamp(1, 20);
     final random = Random();
     final nowLocal = DateTime.now();
     final todayStart = DateTime(nowLocal.year, nowLocal.month, nowLocal.day);
@@ -212,6 +220,9 @@ class WorkoutRepository {
 
     final occupiedDays = <String>{};
     for (final row in existing) {
+      final sets = await loadSets(row.id);
+      final workout = _workoutFromRow(row, sets);
+      if (!WorkoutMetrics.hasLoggedData(workout)) continue;
       final local = row.date.toLocal();
       occupiedDays.add('${local.year}-${local.month}-${local.day}');
     }
@@ -227,13 +238,32 @@ class WorkoutRepository {
     if (openPastDays.isEmpty) return null;
 
     final pickedDay = openPastDays[random.nextInt(openPastDays.length)];
-    final sessionLocal = DateTime(
+    return DateTime(
       pickedDay.year,
       pickedDay.month,
       pickedDay.day,
       8 + random.nextInt(12),
       random.nextInt(60),
     );
+  }
+
+  /// Inserts a completed strength session on a random free day in the past.
+  /// Returns the local session [DateTime], or null if no day is available.
+  /// For dev/testing only.
+  Future<DateTime?> insertRandomDummyStrengthWorkoutInPast({
+    required String routineExerciseId,
+    required int setCount,
+    double weightHintKg = 60,
+    int repsHint = 8,
+    int maxDaysAgo = 90,
+  }) async {
+    final setsToCreate = setCount.clamp(1, 20);
+    final random = Random();
+    final sessionLocal = await _pickRandomOpenPastSessionLocal(
+      routineExerciseId: routineExerciseId,
+      maxDaysAgo: maxDaysAgo,
+    );
+    if (sessionLocal == null) return null;
 
     final workoutId = _uuid.v4();
     await _local.insertWorkoutLog(
@@ -247,6 +277,43 @@ class WorkoutRepository {
       final weight = _randomDummyWeightKg(random, weightHintKg);
       final reps = _randomDummyReps(random, repsHint);
       final entry = Set(setNumber: setNumber, weight: weight, reps: reps);
+      persistedSets.add(await persistSet(workoutId, entry));
+    }
+    await saveTotalTrainingLoad(workoutId, persistedSets);
+    return sessionLocal;
+  }
+
+  /// Inserts a completed timer session on a random free day in the past.
+  /// Returns the local session [DateTime], or null if no day is available.
+  /// For dev/testing only.
+  Future<DateTime?> insertRandomDummyTimerWorkoutInPast({
+    required String routineExerciseId,
+    required int setCount,
+    int durationHintSeconds = 45,
+    int maxDaysAgo = 90,
+  }) async {
+    final setsToCreate = setCount.clamp(1, 20);
+    final random = Random();
+    final sessionLocal = await _pickRandomOpenPastSessionLocal(
+      routineExerciseId: routineExerciseId,
+      maxDaysAgo: maxDaysAgo,
+    );
+    if (sessionLocal == null) return null;
+
+    final workoutId = _uuid.v4();
+    await _local.insertWorkoutLog(
+      id: workoutId,
+      exerciseId: routineExerciseId,
+      date: sessionLocal.toUtc(),
+    );
+
+    final persistedSets = <Set>[];
+    for (var setNumber = 1; setNumber <= setsToCreate; setNumber++) {
+      final durationSeconds = _randomDummyHoldSeconds(
+        random,
+        durationHintSeconds,
+      );
+      final entry = Set(setNumber: setNumber, timeElapsed: durationSeconds);
       persistedSets.add(await persistSet(workoutId, entry));
     }
     await saveTotalTrainingLoad(workoutId, persistedSets);
@@ -272,6 +339,13 @@ class WorkoutRepository {
       TrainingTargetInput.maxReps,
     );
     return minReps + random.nextInt(maxReps - minReps + 1);
+  }
+
+  static int _randomDummyHoldSeconds(Random random, int hintSeconds) {
+    final center = hintSeconds > 0 ? hintSeconds : 45;
+    final minSeconds = (center - 20).clamp(5, 600);
+    final maxSeconds = (center + 20).clamp(5, 600);
+    return minSeconds + random.nextInt(maxSeconds - minSeconds + 1);
   }
 }
 

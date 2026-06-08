@@ -78,4 +78,16 @@ class WorkoutLocalSource {
           ..where((log) => log.id.equals(workoutId)))
         .write(drift.WorkoutLogsCompanion(totalTrainingLoad: Value(total)));
   }
+
+  Future<void> deleteSetEntriesForWorkout(String workoutId) {
+    return (_db.delete(_db.setEntries)
+          ..where((setEntry) => setEntry.workoutLogId.equals(workoutId)))
+        .go();
+  }
+
+  Future<void> deleteWorkoutLog(String workoutId) {
+    return (_db.delete(_db.workoutLogs)
+          ..where((log) => log.id.equals(workoutId)))
+        .go();
+  }
 }

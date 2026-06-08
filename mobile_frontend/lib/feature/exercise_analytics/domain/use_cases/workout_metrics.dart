@@ -6,6 +6,9 @@ abstract final class WorkoutMetrics {
   static double workoutTotal(Workout workout) =>
       workout.totalTrainingLoad ?? totalTrainingLoadForSets(workout.sets);
 
+  /// True when at least one set has logged strength load or timer duration.
+  static bool hasLoggedData(Workout workout) => workoutTotal(workout) > 0;
+
   static double? trainingLoadChangePercentVsPrevious(
     double currentTotal,
     double? previousTotal,
@@ -19,6 +22,46 @@ abstract final class WorkoutMetrics {
       workoutTotal(later),
       workoutTotal(earlier),
     );
+  }
+
+  /// Change for the newest session with logged volume vs the prior session with data.
+  static double? latestSessionPercentChange(List<Workout> workouts) {
+    if (workouts.isEmpty) return null;
+
+    final newestFirst = workouts.reversed.toList();
+    for (var index = 0; index < newestFirst.length; index++) {
+      final currentTotal = workoutTotal(newestFirst[index]);
+      if (currentTotal <= 0) continue;
+
+      for (
+        var previousIndex = index + 1;
+        previousIndex < newestFirst.length;
+        previousIndex++
+      ) {
+        final previousTotal = workoutTotal(newestFirst[previousIndex]);
+        if (previousTotal > 0) {
+          return trainingLoadChangePercentVsPrevious(
+            currentTotal,
+            previousTotal,
+          );
+        }
+      }
+      return null;
+    }
+    return null;
+  }
+
+  /// e.g. `+12.5`, `-3`, `Stable`, or `—` when unknown.
+  static String formatPercentChange(double? percent) {
+    if (percent == null) return '—';
+    if (percent == 0) return 'Stable';
+
+    final magnitude = percent.abs();
+    final magnitudeLabel = magnitude == magnitude.roundToDouble()
+        ? magnitude.round().toString()
+        : magnitude.toStringAsFixed(1);
+
+    return percent > 0 ? '+$magnitudeLabel' : '-$magnitudeLabel';
   }
 
   /// Heaviest logged strength set (kg) within the last [days] calendar days.

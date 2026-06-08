@@ -1,0 +1,333 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile_frontend/common/widgets/kinetic_app_bar.dart';
+import 'package:mobile_frontend/feature/routine/data/repositories/routine_repository.dart';
+import 'package:mobile_frontend/feature/routine/domain/entities/routine.dart';
+import 'package:mobile_frontend/feature/routine/domain/use_cases/validate_routine_form.dart';
+import 'package:mobile_frontend/feature/routine_exercise/data/repositories/routine_exercise_repository.dart';
+import 'package:mobile_frontend/feature/routine_exercise/domain/entities/routine_exercise.dart';
+
+class EditRoutineScreen extends ConsumerStatefulWidget {
+  final Routine routine;
+
+  const EditRoutineScreen({super.key, required this.routine});
+
+  @override
+  ConsumerState<EditRoutineScreen> createState() => _EditRoutineScreenState();
+}
+
+class _EditRoutineScreenState extends ConsumerState<EditRoutineScreen> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descriptionController;
+  bool _saving = false;
+  bool _deleting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final routine = widget.routine;
+    _nameController = TextEditingController(text: routine.title);
+    _descriptionController = TextEditingController(
+      text: routine.description ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    final error = ValidateRoutineForm.titleError(name);
+    if (error != null) return;
+
+    setState(() => _saving = true);
+
+    try {
+      final description = _descriptionController.text.trim();
+      final updated = widget.routine.copyWith(
+        title: name,
+        description: description.isEmpty ? null : description,
+      );
+      await ref.read(routineRepositoryProvider).saveRoutine(updated);
+      if (mounted) Navigator.of(context).pop(updated);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to save: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _confirmAndDeleteRoutine() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Routine'),
+        content: Text(
+          'Delete "${widget.routine.title}"? This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    final nav = Navigator.of(context);
+    try {
+      await ref.read(routineRepositoryProvider).deleteRoutine(widget.routine);
+      if (!mounted) return;
+      nav.pop();
+      nav.pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e')),
+        );
+        setState(() => _deleting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final routineExerciseRepository = ref.read(
+      routineExerciseRepositoryProvider,
+    );
+
+    return Scaffold(
+      appBar: KineticAppBar(
+        title: 'EDIT ROUTINE',
+        showBackButton: true,
+        actions: [
+          GestureDetector(
+            onTap: (_saving || _deleting) ? null : _save,
+            child: Text(
+              'SAVE',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: (_saving || _deleting)
+                    ? colorScheme.outline
+                    : colorScheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(24, 24, 24, 120),
+        children: [
+          const SizedBox(height: 4),
+          Text(
+            widget.routine.title.toUpperCase(),
+            style: GoogleFonts.inter(
+              fontSize: 28,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -1.5,
+              height: 1.0,
+              color: colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 48),
+          _buildField('ROUTINE NAME', 'e.g. Push Day', _nameController),
+          const SizedBox(height: 32),
+          _buildField(
+            'DESCRIPTION',
+            'e.g. Chest, Shoulders, Triceps',
+            _descriptionController,
+          ),
+          const SizedBox(height: 32),
+          _buildDerivedExerciseCount(colorScheme, routineExerciseRepository),
+          const SizedBox(height: 48),
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [colorScheme.primary, colorScheme.primaryContainer],
+              ),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: (_saving || _deleting) ? null : _save,
+                borderRadius: BorderRadius.circular(4),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: _saving
+                        ? SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.onPrimary,
+                            ),
+                          )
+                        : Text(
+                            'SAVE CHANGES',
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 3,
+                              color: colorScheme.onPrimary,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: (_saving || _deleting)
+                  ? null
+                  : _confirmAndDeleteRoutine,
+              child: _deleting
+                  ? SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.error,
+                      ),
+                    )
+                  : Text(
+                      'Delete Routine',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 2,
+                        color: colorScheme.error,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDerivedExerciseCount(
+    ColorScheme colorScheme,
+    RoutineExerciseRepository routineExerciseRepository,
+  ) {
+    return StreamBuilder<List<RoutineExercise>>(
+      stream: routineExerciseRepository.watchForRoutine(widget.routine.id),
+      builder: (context, snapshot) {
+        final exerciseCount = snapshot.data?.length ?? 0;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'EXERCISES',
+              style: GoogleFonts.inter(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 2,
+                color: colorScheme.tertiary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '$exerciseCount',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Based on exercises linked to this routine. Add or remove them from the routine screen.',
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                height: 1.4,
+                color: colorScheme.outline,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 2,
+            color: colorScheme.tertiary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
+              color: colorScheme.outlineVariant,
+            ),
+            border: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+              ),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: colorScheme.primary, width: 2),
+            ),
+            contentPadding: const EdgeInsets.only(bottom: 12),
+          ),
+        ),
+      ],
+    );
+  }
+}

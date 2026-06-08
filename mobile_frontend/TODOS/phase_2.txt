@@ -1,0 +1,25 @@
+STAGE 2 — Finalize local app (pre-sync)
+=======================================
+Goal: Ship a solid local-only app. No sync schema or purge jobs yet.
+Do this before starting Stage 3.
+
+CODE
+----
+[ ] Remove hard-delete of empty workouts from read paths in WorkoutRepository:
+      - listWorkouts() → filter only (hasLoggedData), no _deleteEmptyWorkout
+      - findTodaysWorkoutWithLoggedData() → return null if empty, do not delete
+      - ensureWorkoutIdForSession() → reuse today's row if exists, do not delete
+[ ] flutter analyze clean
+
+VERIFY (manual)
+---------------
+[ ] Log set without tapping Finish → graph, history, stat cards update
+[ ] Open exercise, leave without logging → no row in history
+[ ] Strength: add set, commit row, finish
+[ ] Timer: log set, finish
+[ ] totalTrainingLoad non-null after first logged set (check DB or stat cards)
+
+NOTES
+-----
+- Local orphan empty rows in SQLite are fine until Stage 3 purge job
+- Filtering empty workouts = correct UX; hard-delete on read = remove before sync

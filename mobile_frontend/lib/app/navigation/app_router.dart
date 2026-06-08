@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_frontend/app/navigation/app_shell.dart';
-import 'package:mobile_frontend/feature/auth/screens/onboarding_screen.dart';
-import 'package:mobile_frontend/feature/auth/screens/sign_in_screen.dart';
+import 'package:mobile_frontend/feature/auth/presentation/pages/onboarding_screen.dart';
+import 'package:mobile_frontend/feature/auth/presentation/pages/sign_in_screen.dart';
 
 /// Builds the app [GoRouter] (initial route depends on onboarding completion).
 ///

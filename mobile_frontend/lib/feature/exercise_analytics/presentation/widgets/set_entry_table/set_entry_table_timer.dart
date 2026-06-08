@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_frontend/common/utils/training_target_input.dart';
-import 'package:mobile_frontend/feature/exercise/models/exercise.dart';
+import 'package:mobile_frontend/feature/exercise_analytics/domain/entities/exercise.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/domain/entities/set.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/presentation/widgets/set_entry_table/set_entry_primary_action_button.dart';
 import 'package:mobile_frontend/feature/exercise_analytics/presentation/widgets/set_entry_table/set_entry_table_header_timer.dart';
@@ -53,15 +53,6 @@ class _SetEntryTableTimerState extends ConsumerState<SetEntryTableTimer> {
     }
 
     if (!sessionState.lastRowNeedsDuration) return;
-
-    if (sessionState.workoutId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(TimerSessionNotifier.missingRoutineMessage),
-        ),
-      );
-      return;
-    }
 
     final setNumber = sessionState.sets.last.setNumber;
     notifier.setAddingSet(true);

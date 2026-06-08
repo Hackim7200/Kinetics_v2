@@ -12,13 +12,24 @@ part 'timer_session_notifier.g.dart';
 /// Owns live timer session state and coordinates load / log-set / finish.
 @riverpod
 class TimerSessionNotifier extends _$TimerSessionNotifier {
-  static const missingRoutineMessage =
-      'Open this exercise from a routine to save timed sets.';
-
   late String? _routineExerciseId;
   late int _maxSets;
 
   WorkoutRepository get _workouts => ref.read(workoutRepositoryProvider);
+
+  Future<String?> _ensureWorkoutId() async {
+    final routineExerciseId = _routineExerciseId;
+    if (routineExerciseId == null) return null;
+
+    final workoutId = await _workouts.ensureWorkoutIdForSession(
+      routineExerciseId: routineExerciseId,
+      currentWorkoutId: state.workoutId,
+    );
+    if (state.workoutId != workoutId) {
+      state = state.copyWith(workoutId: workoutId);
+    }
+    return workoutId;
+  }
 
   @override
   TimerSessionState build(String? routineExerciseId, int maxSets) {
@@ -43,14 +54,15 @@ class TimerSessionNotifier extends _$TimerSessionNotifier {
       );
       state = state.copyWith(maxHoldSecondsLast30Days: maxHold);
 
-      final workout = await _workouts.getOrCreateTodaysWorkout(
+      final workout = await _workouts.findTodaysWorkoutWithLoggedData(
         routineExerciseId,
       );
-      final loaded = await _workouts.loadSets(workout.id);
-      var next = state.copyWith(workoutId: workout.id);
-
-      if (loaded.isNotEmpty && next.hasPristineFirstRow) {
-        next = next.copyWith(sets: loaded);
+      var next = state;
+      if (workout != null) {
+        next = state.copyWith(workoutId: workout.id);
+        if (workout.sets.isNotEmpty && next.hasPristineFirstRow) {
+          next = next.copyWith(sets: workout.sets);
+        }
       }
 
       state = next.copyWith(
@@ -74,7 +86,7 @@ class TimerSessionNotifier extends _$TimerSessionNotifier {
       return;
     }
 
-    final workoutId = state.workoutId;
+    final workoutId = await _ensureWorkoutId();
     if (workoutId == null) {
       state = state.copyWith(addingSet: false);
       return;
@@ -106,7 +118,12 @@ class TimerSessionNotifier extends _$TimerSessionNotifier {
   Future<void> finish() async {
     if (state.workoutFinished) return;
 
-    final workoutId = state.workoutId;
+    if (state.workoutId == null && !timerSetHasDuration(state.sets.last)) {
+      state = state.copyWith(workoutFinished: true);
+      return;
+    }
+
+    final workoutId = await _ensureWorkoutId();
     if (workoutId == null) {
       state = state.copyWith(workoutFinished: true);
       return;

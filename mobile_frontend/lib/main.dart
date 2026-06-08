@@ -8,7 +8,8 @@ import 'package:mobile_frontend/app/navigation/app_router.dart';
 import 'package:mobile_frontend/app/themes/app_theme.dart';
 import 'package:mobile_frontend/database/database.dart';
 import 'package:mobile_frontend/database/database_provider.dart';
-import 'package:mobile_frontend/feature/auth/data/onboarding_pref.dart';
+import 'package:mobile_frontend/feature/auth/data/repositories/onboarding_repository.dart';
+import 'package:mobile_frontend/feature/auth/data/sources/onboarding_local_source.dart';
 import 'package:path_provider/path_provider.dart';
 
 Future<void> main() async {
@@ -18,7 +19,8 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  final onboardingComplete = await OnboardingPrefs.isComplete();
+  final onboardingRepository = OnboardingRepository(OnboardingLocalSource());
+  final onboardingComplete = await onboardingRepository.isComplete();
   final db = await _initDatabase();
   final router = createAppRouter(onboardingComplete: onboardingComplete);
 
