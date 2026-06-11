@@ -33,7 +33,9 @@ class _ExerciseListState extends ConsumerState<ExerciseList> {
   @override
   Widget build(BuildContext context) {
     final appTheme = Theme.of(context).colorScheme;
-    final routineExerciseRepository = ref.watch(routineExerciseRepositoryProvider);
+    final routineExerciseRepository = ref.watch(
+      routineExerciseRepositoryProvider,
+    );
     final workoutRepository = ref.read(workoutRepositoryProvider);
 
     return StreamBuilder<List<RoutineExercise>>(
@@ -146,18 +148,6 @@ class _ExerciseTileWithStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (routineExercise.isTimer) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: ExerciseTile(
-          routineExercise: routineExercise,
-          listIndex: listIndex,
-          routineName: routineName,
-          onAnalyticsClosed: onAnalyticsClosed,
-        ),
-      );
-    }
-
     return FutureBuilder<double?>(
       future: workoutRepository.latestSessionTrainingLoadChangePercent(
         routineExercise.id,

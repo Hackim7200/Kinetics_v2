@@ -60,10 +60,10 @@ class CircuitDashboardScreen extends ConsumerWidget {
           }
 
           return StreamBuilder(
-            stream: circuitExerciseRepository.watchAllLinks(),
-            builder: (context, linkSnap) {
-              final counts = linkSnap.hasData
-                  ? CircuitDisplay.exerciseCountsByCircuitId(linkSnap.data!)
+            stream: circuitExerciseRepository.watchAllCircuitExercises(),
+            builder: (context, circuitExerciseSnap) {
+              final counts = circuitExerciseSnap.hasData
+                  ? CircuitDisplay.exerciseCountsByCircuitId(circuitExerciseSnap.data!)
                   : <String, int>{};
 
               return ListView(

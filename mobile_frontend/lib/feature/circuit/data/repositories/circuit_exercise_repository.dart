@@ -9,47 +9,54 @@ part 'circuit_exercise_repository.g.dart';
 
 const _uuid = Uuid();
 
-/// Reads and writes circuit exercise links. Maps Drift rows to domain entities.
+/// Reads and writes circuit exercise rows. Maps Drift rows to domain entities.
 class CircuitExerciseRepository {
   CircuitExerciseRepository(this._local);
 
   final CircuitExerciseLocalSource _local;
 
-  CircuitExercise _fromRow(drift.CircuitExercise row) {
+  CircuitExercise _circuitExerciseFromDrift(
+    drift.CircuitExercise driftCircuitExercise,
+  ) {
     return CircuitExercise(
-      id: row.id,
-      circuitId: row.circuitId,
-      title: row.title,
-      orderIndex: row.orderIndex,
+      id: driftCircuitExercise.id,
+      circuitId: driftCircuitExercise.circuitId,
+      title: driftCircuitExercise.title,
+      orderIndex: driftCircuitExercise.orderIndex,
     );
   }
 
-  Stream<List<CircuitExercise>> watchAllLinks() {
-    return _local.watchAllLinks().map(
-          (rows) => rows.map(_fromRow).toList(),
-        );
+  Stream<List<CircuitExercise>> watchAllCircuitExercises() {
+    return _local.watchAllCircuitExercises().map(
+      (driftCircuitExercises) =>
+          driftCircuitExercises.map(_circuitExerciseFromDrift).toList(),
+    );
   }
 
   Stream<List<CircuitExercise>> watchForCircuit(String circuitId) {
     return _local.watchForCircuit(circuitId).map(
-          (rows) => rows.map(_fromRow).toList(),
-        );
+      (driftCircuitExercises) =>
+          driftCircuitExercises.map(_circuitExerciseFromDrift).toList(),
+    );
   }
 
-  Future<List<CircuitExercise>> linksForCircuit(String circuitId) {
-    return _local.linksForCircuit(circuitId).then(
-          (rows) => rows.map(_fromRow).toList(),
-        );
+  Future<List<CircuitExercise>> circuitExercisesForCircuit(String circuitId) {
+    return _local.circuitExercisesForCircuit(circuitId).then(
+      (driftCircuitExercises) =>
+          driftCircuitExercises.map(_circuitExerciseFromDrift).toList(),
+    );
   }
 
   Future<void> addExerciseToCircuit({
     required String circuitId,
     required String title,
   }) async {
-    final links = await linksForCircuit(circuitId);
-    final nextOrder = links.isEmpty ? 0 : links.last.orderIndex + 1;
+    final circuitExercises = await circuitExercisesForCircuit(circuitId);
+    final nextOrder = circuitExercises.isEmpty
+        ? 0
+        : circuitExercises.last.orderIndex + 1;
 
-    await _local.insertLink(
+    await _local.insertCircuitExercise(
       id: _uuid.v4(),
       circuitId: circuitId,
       title: title.trim(),
@@ -58,14 +65,17 @@ class CircuitExerciseRepository {
   }
 
   Future<void> updateExerciseInCircuit({
-    required CircuitExercise link,
+    required CircuitExercise circuitExercise,
     required String title,
   }) {
-    return _local.updateLinkTitle(id: link.id, title: title.trim());
+    return _local.updateCircuitExerciseTitle(
+      id: circuitExercise.id,
+      title: title.trim(),
+    );
   }
 
-  Future<void> deleteExerciseEntry(CircuitExercise link) {
-    return _local.deleteLinkById(link.id);
+  Future<void> deleteCircuitExercise(CircuitExercise circuitExercise) {
+    return _local.deleteCircuitExerciseById(circuitExercise.id);
   }
 }
 

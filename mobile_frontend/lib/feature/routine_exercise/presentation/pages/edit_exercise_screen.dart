@@ -144,7 +144,7 @@ class _EditExerciseScreenState extends ConsumerState<EditExerciseScreen> {
     try {
       await ref
           .read(routineExerciseRepositoryProvider)
-          .deleteExerciseEntry(widget.routineExercise);
+          .deleteRoutineExercise(widget.routineExercise);
       if (mounted) Navigator.of(context).pop('deleted');
     } catch (e) {
       if (mounted) {

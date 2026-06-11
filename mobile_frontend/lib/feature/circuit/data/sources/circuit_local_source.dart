@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:mobile_frontend/database/database.dart' as drift;
+import 'package:mobile_frontend/database/soft_delete_writer.dart';
 
 /// Raw Drift queries for circuit rows.
 class CircuitLocalSource {
@@ -16,7 +17,9 @@ class CircuitLocalSource {
     int? countdown,
     int? stationDuration,
   }) {
-    return _db.into(_db.circuits).insertOnConflictUpdate(
+    return _db
+        .into(_db.circuits)
+        .insertOnConflictUpdate(
           drift.CircuitsCompanion(
             id: Value(id),
             title: Value(title),
@@ -33,24 +36,22 @@ class CircuitLocalSource {
 
   Stream<List<drift.Circuit>> watchCircuits() {
     return (_db.select(_db.circuits)
+          ..where((circuit) => circuit.isDeleted.equals(false))
           ..orderBy([(circuit) => OrderingTerm.asc(circuit.title)]))
         .watch();
   }
 
   Future<void> deleteCircuitById(String circuitId) {
-    return (_db.delete(_db.circuits)..where((c) => c.id.equals(circuitId))).go();
+    return SoftDeleteWriter.circuit(_db, circuitId);
   }
 
   Future<void> deleteExercisesForCircuit(String circuitId) {
-    return (_db.delete(_db.circuitExercises)
-          ..where((t) => t.circuitId.equals(circuitId)))
-        .go();
+    return SoftDeleteWriter.circuitExercisesForCircuit(_db, circuitId);
   }
 
   Future<void> deleteCircuitWithExercises(String circuitId) {
-    return _db.transaction(() async {
-      await deleteExercisesForCircuit(circuitId);
-      await deleteCircuitById(circuitId);
-    });
+    return _db.transaction(
+      () => SoftDeleteWriter.circuitWithExercises(_db, circuitId),
+    );
   }
 }

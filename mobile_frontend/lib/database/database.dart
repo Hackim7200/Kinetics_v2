@@ -33,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
     : super(_openConnection(dbDirectory, sqliteFileName));
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -44,6 +44,43 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4 && from >= 3) {
         await m.dropColumn(workoutLogs, 'training_load_change_percent');
+      }
+      if (from < 5) {
+        await m.addColumn(routines, routines.version);
+        await m.addColumn(routines, routines.updatedAt);
+        await m.addColumn(routines, routines.createdAt);
+        await m.addColumn(routines, routines.isDeleted);
+        await m.addColumn(routines, routines.syncStatus);
+
+        await m.addColumn(routineExercises, routineExercises.version);
+        await m.addColumn(routineExercises, routineExercises.updatedAt);
+        await m.addColumn(routineExercises, routineExercises.createdAt);
+        await m.addColumn(routineExercises, routineExercises.isDeleted);
+        await m.addColumn(routineExercises, routineExercises.syncStatus);
+
+        await m.addColumn(circuits, circuits.version);
+        await m.addColumn(circuits, circuits.updatedAt);
+        await m.addColumn(circuits, circuits.createdAt);
+        await m.addColumn(circuits, circuits.isDeleted);
+        await m.addColumn(circuits, circuits.syncStatus);
+
+        await m.addColumn(circuitExercises, circuitExercises.version);
+        await m.addColumn(circuitExercises, circuitExercises.updatedAt);
+        await m.addColumn(circuitExercises, circuitExercises.createdAt);
+        await m.addColumn(circuitExercises, circuitExercises.isDeleted);
+        await m.addColumn(circuitExercises, circuitExercises.syncStatus);
+
+        await m.addColumn(workoutLogs, workoutLogs.version);
+        await m.addColumn(workoutLogs, workoutLogs.updatedAt);
+        await m.addColumn(workoutLogs, workoutLogs.createdAt);
+        await m.addColumn(workoutLogs, workoutLogs.isDeleted);
+        await m.addColumn(workoutLogs, workoutLogs.syncStatus);
+
+        await m.addColumn(setEntries, setEntries.version);
+        await m.addColumn(setEntries, setEntries.updatedAt);
+        await m.addColumn(setEntries, setEntries.createdAt);
+        await m.addColumn(setEntries, setEntries.isDeleted);
+        await m.addColumn(setEntries, setEntries.syncStatus);
       }
     },
   );

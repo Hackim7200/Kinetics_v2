@@ -1,9 +1,10 @@
 import 'package:drift/drift.dart';
+import 'package:mobile_frontend/database/tables/sync_metadata_mixin.dart';
 import 'package:mobile_frontend/database/tables/workout_tables/routine_table.dart';
 
 /// Exercise slot within a routine (`timer` or `weight`).
 @DataClassName('RoutineExercise')
-class RoutineExercises extends Table {
+class RoutineExercises extends Table with SyncMetadataColumns {
   TextColumn get id => text()();
   TextColumn get routineId => text().references(Routines, #id)();
   TextColumn get title => text()();

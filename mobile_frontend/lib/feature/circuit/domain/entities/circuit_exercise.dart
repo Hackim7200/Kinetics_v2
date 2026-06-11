@@ -1,4 +1,4 @@
-/// A single exercise station linked to a circuit. Drift-free.
+/// A single exercise station in a circuit. Drift-free.
 class CircuitExercise {
   final String id;
   final String circuitId;

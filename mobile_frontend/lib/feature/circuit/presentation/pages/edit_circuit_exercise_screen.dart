@@ -7,12 +7,12 @@ import 'package:mobile_frontend/feature/circuit/domain/entities/circuit_exercise
 import 'package:mobile_frontend/feature/circuit/domain/use_cases/validate_circuit_exercise.dart';
 
 class EditCircuitExerciseScreen extends ConsumerStatefulWidget {
-  final CircuitExercise link;
+  final CircuitExercise circuitExercise;
   final String? circuitName;
 
   const EditCircuitExerciseScreen({
     super.key,
-    required this.link,
+    required this.circuitExercise,
     this.circuitName,
   });
 
@@ -30,7 +30,7 @@ class _EditCircuitExerciseScreenState
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.link.title);
+    _nameController = TextEditingController(text: widget.circuitExercise.title);
   }
 
   @override
@@ -46,16 +46,18 @@ class _EditCircuitExerciseScreenState
     setState(() => _saving = true);
 
     try {
-      await ref.read(circuitExerciseRepositoryProvider).updateExerciseInCircuit(
-            link: widget.link,
+      await ref
+          .read(circuitExerciseRepositoryProvider)
+          .updateExerciseInCircuit(
+            circuitExercise: widget.circuitExercise,
             title: name,
           );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -68,7 +70,7 @@ class _EditCircuitExerciseScreenState
       builder: (ctx) => AlertDialog(
         title: const Text('Remove Exercise'),
         content: Text(
-          'Remove "${widget.link.title}" from this circuit?',
+          'Remove "${widget.circuitExercise.title}" from this circuit?',
         ),
         actions: [
           TextButton(
@@ -89,13 +91,13 @@ class _EditCircuitExerciseScreenState
     try {
       await ref
           .read(circuitExerciseRepositoryProvider)
-          .deleteExerciseEntry(widget.link);
+          .deleteCircuitExercise(widget.circuitExercise);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to remove: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to remove: $e')));
         setState(() => _deleting = false);
       }
     }

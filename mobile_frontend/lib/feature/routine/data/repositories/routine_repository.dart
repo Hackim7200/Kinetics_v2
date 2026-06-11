@@ -15,11 +15,11 @@ class RoutineRepository {
 
   final RoutineLocalSource _local;
 
-  Routine _fromRow(drift.Routine row) {
+  Routine _routineFromDrift(drift.Routine driftRoutine) {
     return Routine(
-      id: row.id,
-      title: row.title,
-      description: row.description,
+      id: driftRoutine.id,
+      title: driftRoutine.title,
+      description: driftRoutine.description,
     );
   }
 
@@ -34,7 +34,7 @@ class RoutineRepository {
 
   Stream<List<Routine>> watchRoutines() {
     return _local.watchRoutines().map(
-          (rows) => rows.map(_fromRow).toList(),
+          (driftRoutines) => driftRoutines.map(_routineFromDrift).toList(),
         );
   }
 

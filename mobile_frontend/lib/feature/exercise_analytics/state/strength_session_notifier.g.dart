@@ -63,7 +63,7 @@ final class StrengthSessionNotifierProvider
 }
 
 String _$strengthSessionNotifierHash() =>
-    r'2f750eeed330714e3f0931dfc36e9768ddd31512';
+    r'49197e4578e9f3801bd957c72b706b3546c5d1a2';
 
 /// Owns live strength session state and coordinates load / persist / add / finish.
 

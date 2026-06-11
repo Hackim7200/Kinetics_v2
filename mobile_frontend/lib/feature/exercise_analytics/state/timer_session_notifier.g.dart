@@ -62,7 +62,7 @@ final class TimerSessionNotifierProvider
 }
 
 String _$timerSessionNotifierHash() =>
-    r'454f00d588f45d1e88211d0d38716edeb53af2fb';
+    r'8465cdcd4e15800e4d4656964d7aa7db217a189c';
 
 /// Owns live timer session state and coordinates load / log-set / finish.
 

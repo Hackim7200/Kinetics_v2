@@ -4,11 +4,15 @@ import 'package:mobile_frontend/feature/circuit/domain/entities/circuit_exercise
 /// Display helpers and derived metrics for circuit UI.
 abstract final class CircuitDisplay {
   static Map<String, int> exerciseCountsByCircuitId(
-    List<CircuitExercise> links,
+    List<CircuitExercise> circuitExercises,
   ) {
     final map = <String, int>{};
-    for (final link in links) {
-      map.update(link.circuitId, (count) => count + 1, ifAbsent: () => 1);
+    for (final circuitExercise in circuitExercises) {
+      map.update(
+        circuitExercise.circuitId,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
     }
     return map;
   }

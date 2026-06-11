@@ -1,4 +1,4 @@
-STAGE 2 — Finalize local app (pre-sync)
+STAGE 2 — Finalize local app (pre-sync) adding meta data
 =======================================
 Goal: Ship a solid local-only app. No sync schema or purge jobs yet.
 Do this before starting Stage 3.
@@ -9,7 +9,9 @@ CODE
       - listWorkouts() → filter only (hasLoggedData), no _deleteEmptyWorkout
       - findTodaysWorkoutWithLoggedData() → return null if empty, do not delete
       - ensureWorkoutIdForSession() → reuse today's row if exists, do not delete
-[ ] flutter analyze clean
+[] the delete tombstone should cascade when parent is deleted all children should also be marked for deletion
+[] updating exercise should update the meta data e.g version and updated exercise_analytics
+[] Sorting of exercise and routine should be correct they should be auto assigned index number lastIndex+1
 
 VERIFY (manual)
 ---------------

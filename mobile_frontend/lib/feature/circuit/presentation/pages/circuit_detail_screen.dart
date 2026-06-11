@@ -197,7 +197,7 @@ class _CircuitExerciseList extends StatelessWidget {
           );
         }
 
-        final links = snapshot.data!;
+        final circuitExercises = snapshot.data!;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -225,7 +225,7 @@ class _CircuitExerciseList extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '${links.length} Total',
+                        '${circuitExercises.length} Total',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -238,7 +238,7 @@ class _CircuitExerciseList extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            if (links.isEmpty)
+            if (circuitExercises.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),
                 child: Text(
@@ -249,11 +249,11 @@ class _CircuitExerciseList extends StatelessWidget {
             else
               Column(
                 children: [
-                  for (final link in links)
+                  for (final circuitExercise in circuitExercises)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: _CircuitExerciseTile(
-                        link: link,
+                        circuitExercise: circuitExercise,
                         circuitName: circuitName,
                         stationDurationSeconds: stationDurationSeconds,
                       ),
@@ -269,12 +269,12 @@ class _CircuitExerciseList extends StatelessWidget {
 }
 
 class _CircuitExerciseTile extends StatelessWidget {
-  final CircuitExercise link;
+  final CircuitExercise circuitExercise;
   final String circuitName;
   final int? stationDurationSeconds;
 
   const _CircuitExerciseTile({
-    required this.link,
+    required this.circuitExercise,
     required this.circuitName,
     required this.stationDurationSeconds,
   });
@@ -282,7 +282,7 @@ class _CircuitExerciseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final name = link.title;
+    final name = circuitExercise.title;
     final subtitle = CircuitDisplay.stationSubtitle(stationDurationSeconds);
 
     return Material(
@@ -292,7 +292,7 @@ class _CircuitExerciseTile extends StatelessWidget {
           Navigator.of(context).push<void>(
             MaterialPageRoute<void>(
               builder: (_) => EditCircuitExerciseScreen(
-                link: link,
+                circuitExercise: circuitExercise,
                 circuitName: circuitName,
               ),
             ),

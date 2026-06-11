@@ -22,32 +22,35 @@ class WorkoutRepository {
 
   final WorkoutLocalSource _local;
 
-  Set _setFromRow(drift.SetEntry row) {
+  Set _setFromDriftSetEntry(drift.SetEntry driftSetEntry) {
     final load =
-        row.trainingLoad ??
+        driftSetEntry.trainingLoad ??
         trainingLoadForSet(
-          weight: row.weight,
-          reps: row.reps,
-          timeElapsed: row.timeElapsed,
+          weight: driftSetEntry.weight,
+          reps: driftSetEntry.reps,
+          timeElapsed: driftSetEntry.timeElapsed,
         );
     return Set(
-      id: row.id,
-      workoutId: row.workoutLogId,
-      setNumber: row.setNumber,
-      reps: row.reps,
-      timeElapsed: row.timeElapsed,
-      weight: row.weight,
+      id: driftSetEntry.id,
+      workoutId: driftSetEntry.workoutLogId,
+      setNumber: driftSetEntry.setNumber,
+      reps: driftSetEntry.reps,
+      timeElapsed: driftSetEntry.timeElapsed,
+      weight: driftSetEntry.weight,
       trainingLoad: load,
     );
   }
 
-  Workout _workoutFromRow(drift.WorkoutLog row, List<Set> sets) {
+  Workout _workoutFromDriftWorkoutLog(
+    drift.WorkoutLog driftWorkoutLog,
+    List<Set> sets,
+  ) {
     return Workout(
-      id: row.id,
-      exerciseId: row.exerciseId,
-      date: row.date.toLocal(),
+      id: driftWorkoutLog.id,
+      exerciseId: driftWorkoutLog.exerciseId,
+      date: driftWorkoutLog.date.toLocal(),
       sets: sets,
-      totalTrainingLoad: row.totalTrainingLoad,
+      totalTrainingLoad: driftWorkoutLog.totalTrainingLoad,
     );
   }
 
@@ -56,14 +59,14 @@ class WorkoutRepository {
   }
 
   Future<drift.WorkoutLog?> _findTodaysWorkout(String routineExerciseId) async {
-    final rows = await _local.workoutLogsForExercise(routineExerciseId);
+    final workoutLogs = await _local.workoutLogsForExercise(routineExerciseId);
     final nowLocal = DateTime.now();
     drift.WorkoutLog? best;
-    for (final row in rows) {
-      final local = row.date.toLocal();
+    for (final workoutLog in workoutLogs) {
+      final local = workoutLog.date.toLocal();
       if (_isSameLocalCalendarDay(local, nowLocal)) {
-        if (best == null || row.date.isAfter(best.date)) {
-          best = row;
+        if (best == null || workoutLog.date.isAfter(best.date)) {
+          best = workoutLog;
         }
       }
     }
@@ -79,14 +82,14 @@ class WorkoutRepository {
   Future<Workout?> findTodaysWorkoutWithLoggedData(
     String routineExerciseId,
   ) async {
-    final row = await _findTodaysWorkout(routineExerciseId);
-    if (row == null) return null;
+    final todaysWorkoutLog = await _findTodaysWorkout(routineExerciseId);
+    if (todaysWorkoutLog == null) return null;
 
-    final sets = await loadSets(row.id);
-    final workout = _workoutFromRow(row, sets);
+    final sets = await loadSets(todaysWorkoutLog.id);
+    final workout = _workoutFromDriftWorkoutLog(todaysWorkoutLog, sets);
     if (WorkoutMetrics.hasLoggedData(workout)) return workout;
 
-    await _deleteEmptyWorkout(row.id);
+    await _deleteEmptyWorkout(todaysWorkoutLog.id);
     return null;
   }
 
@@ -97,12 +100,12 @@ class WorkoutRepository {
   }) async {
     if (currentWorkoutId != null) return currentWorkoutId;
 
-    final existing = await _findTodaysWorkout(routineExerciseId);
-    if (existing != null) {
-      final sets = await loadSets(existing.id);
-      final workout = _workoutFromRow(existing, sets);
-      if (WorkoutMetrics.hasLoggedData(workout)) return existing.id;
-      await _deleteEmptyWorkout(existing.id);
+    final existingWorkoutLog = await _findTodaysWorkout(routineExerciseId);
+    if (existingWorkoutLog != null) {
+      final sets = await loadSets(existingWorkoutLog.id);
+      final workout = _workoutFromDriftWorkoutLog(existingWorkoutLog, sets);
+      if (WorkoutMetrics.hasLoggedData(workout)) return existingWorkoutLog.id;
+      await _deleteEmptyWorkout(existingWorkoutLog.id);
     }
 
     final id = _uuid.v4();
@@ -115,8 +118,8 @@ class WorkoutRepository {
   }
 
   Future<List<Set>> loadSets(String workoutId) async {
-    final rows = await _local.setEntriesForWorkout(workoutId);
-    return rows.map(_setFromRow).toList();
+    final setEntries = await _local.setEntriesForWorkout(workoutId);
+    return setEntries.map(_setFromDriftSetEntry).toList();
   }
 
   Future<void> saveTotalTrainingLoad(String workoutId, List<Set> sets) async {
@@ -156,19 +159,19 @@ class WorkoutRepository {
     String routineExerciseId, {
     int? limit,
   }) async {
-    final rows = await _local.workoutLogsForExerciseNewestFirst(
+    final workoutLogs = await _local.workoutLogsForExerciseNewestFirst(
       routineExerciseId,
     );
-    if (rows.isEmpty) return [];
+    if (workoutLogs.isEmpty) return [];
 
     final workouts = <Workout>[];
-    for (final row in rows) {
-      final sets = await loadSets(row.id);
-      final workout = _workoutFromRow(row, sets);
+    for (final workoutLog in workoutLogs) {
+      final sets = await loadSets(workoutLog.id);
+      final workout = _workoutFromDriftWorkoutLog(workoutLog, sets);
       if (WorkoutMetrics.hasLoggedData(workout)) {
         workouts.add(workout);
       } else {
-        await _deleteEmptyWorkout(row.id);
+        await _deleteEmptyWorkout(workoutLog.id);
       }
     }
 
@@ -183,13 +186,13 @@ class WorkoutRepository {
     String routineExerciseId, {
     int days = 30,
   }) async {
-    final rows = await _local.workoutLogsForExercise(routineExerciseId);
-    if (rows.isEmpty) return null;
+    final workoutLogs = await _local.workoutLogsForExercise(routineExerciseId);
+    if (workoutLogs.isEmpty) return null;
     final cutoff = DateTime.now().subtract(Duration(days: days));
     int? best;
-    for (final row in rows) {
-      if (row.date.toLocal().isBefore(cutoff)) continue;
-      final sets = await loadSets(row.id);
+    for (final workoutLog in workoutLogs) {
+      if (workoutLog.date.toLocal().isBefore(cutoff)) continue;
+      final sets = await loadSets(workoutLog.id);
       for (final set in sets) {
         final duration = set.timeElapsed;
         if (duration == null || duration < 1) continue;
@@ -216,14 +219,16 @@ class WorkoutRepository {
     final nowLocal = DateTime.now();
     final todayStart = DateTime(nowLocal.year, nowLocal.month, nowLocal.day);
 
-    final existing = await _local.workoutLogsForExercise(routineExerciseId);
+    final existingWorkoutLogs = await _local.workoutLogsForExercise(
+      routineExerciseId,
+    );
 
     final occupiedDays = <String>{};
-    for (final row in existing) {
-      final sets = await loadSets(row.id);
-      final workout = _workoutFromRow(row, sets);
+    for (final workoutLog in existingWorkoutLogs) {
+      final sets = await loadSets(workoutLog.id);
+      final workout = _workoutFromDriftWorkoutLog(workoutLog, sets);
       if (!WorkoutMetrics.hasLoggedData(workout)) continue;
-      final local = row.date.toLocal();
+      final local = workoutLog.date.toLocal();
       occupiedDays.add('${local.year}-${local.month}-${local.day}');
     }
 

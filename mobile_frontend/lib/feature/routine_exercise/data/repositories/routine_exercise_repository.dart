@@ -10,30 +10,32 @@ part 'routine_exercise_repository.g.dart';
 
 const _uuid = Uuid();
 
-/// Reads and writes routine exercise slots. Maps Drift rows to domain entities.
+/// Reads and writes routine exercises. Maps Drift rows to domain entities.
 class RoutineExerciseRepository {
   RoutineExerciseRepository(this._local);
 
   final RoutineExerciseLocalSource _local;
 
-  RoutineExercise _fromRow(drift.RoutineExercise row) {
+  RoutineExercise _routineExerciseFromDrift(drift.RoutineExercise driftRoutineExercise) {
     return RoutineExercise(
-      id: row.id,
-      routineId: row.routineId,
-      title: row.title,
-      targetSets: row.targetSets,
-      targetReps: row.targetReps,
-      techniqueNote: row.techniqueNote,
-      timerTarget: row.timerTarget,
-      orderIndex: row.orderIndex,
-      type: row.type,
+      id: driftRoutineExercise.id,
+      routineId: driftRoutineExercise.routineId,
+      title: driftRoutineExercise.title,
+      targetSets: driftRoutineExercise.targetSets,
+      targetReps: driftRoutineExercise.targetReps,
+      techniqueNote: driftRoutineExercise.techniqueNote,
+      timerTarget: driftRoutineExercise.timerTarget,
+      orderIndex: driftRoutineExercise.orderIndex,
+      type: driftRoutineExercise.type,
     );
   }
 
-  ExerciseSessionLog _sessionLogFromRow(drift.WorkoutLog row) {
+  ExerciseSessionLog _exerciseSessionLogFromDriftWorkoutLog(
+    drift.WorkoutLog driftWorkoutLog,
+  ) {
     return ExerciseSessionLog(
-      routineExerciseId: row.exerciseId,
-      date: row.date,
+      routineExerciseId: driftWorkoutLog.exerciseId,
+      date: driftWorkoutLog.date,
     );
   }
 
@@ -43,22 +45,24 @@ class RoutineExerciseRepository {
 
   Stream<List<RoutineExercise>> watchAllRoutineExercises() {
     return _local.watchAllRoutineExercises().map(
-          (rows) => rows.map(_fromRow).toList(),
+          (driftRoutineExercises) =>
+              driftRoutineExercises.map(_routineExerciseFromDrift).toList(),
         );
   }
 
   Stream<List<ExerciseSessionLog>> watchAllExerciseSessionLogs() {
     return _local.watchAllWorkoutLogs().map(
-          (rows) => rows
-              .where((row) => (row.totalTrainingLoad ?? 0) > 0)
-              .map(_sessionLogFromRow)
+          (driftWorkoutLogs) => driftWorkoutLogs
+              .where((workoutLog) => (workoutLog.totalTrainingLoad ?? 0) > 0)
+              .map(_exerciseSessionLogFromDriftWorkoutLog)
               .toList(),
         );
   }
 
   Stream<List<RoutineExercise>> watchForRoutine(String routineId) {
     return _local.watchForRoutine(routineId).map(
-          (rows) => rows.map(_fromRow).toList(),
+          (driftRoutineExercises) =>
+              driftRoutineExercises.map(_routineExerciseFromDrift).toList(),
         );
   }
 
@@ -115,7 +119,7 @@ class RoutineExerciseRepository {
     );
   }
 
-  Future<void> deleteExerciseEntry(RoutineExercise routineExercise) {
+  Future<void> deleteRoutineExercise(RoutineExercise routineExercise) {
     return _local.deleteRoutineExerciseWithLogs(routineExercise.id);
   }
 }

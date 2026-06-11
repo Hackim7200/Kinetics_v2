@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:mobile_frontend/database/database.dart' as drift;
+import 'package:mobile_frontend/database/soft_delete_writer.dart';
 
 /// Raw Drift queries for routine exercise slots and related workout logs.
 class RoutineExerciseLocalSource {
@@ -9,6 +10,9 @@ class RoutineExerciseLocalSource {
 
   Stream<List<drift.RoutineExercise>> watchAllRoutineExercises() {
     return (_db.select(_db.routineExercises)
+          ..where(
+            (row) => row.isDeleted.equals(false),
+          ) // filter out deleted rows
           ..orderBy([
             (row) => OrderingTerm.asc(row.routineId),
             (row) => OrderingTerm.asc(row.orderIndex),
@@ -17,12 +21,17 @@ class RoutineExerciseLocalSource {
   }
 
   Stream<List<drift.WorkoutLog>> watchAllWorkoutLogs() {
-    return _db.select(_db.workoutLogs).watch();
+    return (_db.select(
+      _db.workoutLogs,
+    )..where((log) => log.isDeleted.equals(false))).watch();
   }
 
   Stream<List<drift.RoutineExercise>> watchForRoutine(String routineId) {
     return (_db.select(_db.routineExercises)
-          ..where((row) => row.routineId.equals(routineId))
+          ..where(
+            (row) =>
+                row.routineId.equals(routineId) & row.isDeleted.equals(false),
+          )
           ..orderBy([(row) => OrderingTerm.asc(row.orderIndex)]))
         .watch();
   }
@@ -31,7 +40,10 @@ class RoutineExerciseLocalSource {
     String routineId,
   ) {
     return (_db.select(_db.routineExercises)
-          ..where((row) => row.routineId.equals(routineId))
+          ..where(
+            (row) =>
+                row.routineId.equals(routineId) & row.isDeleted.equals(false),
+          )
           ..orderBy([(row) => OrderingTerm.asc(row.orderIndex)]))
         .get();
   }
@@ -47,7 +59,9 @@ class RoutineExerciseLocalSource {
     String? timerTarget,
     String? techniqueNote,
   }) {
-    return _db.into(_db.routineExercises).insert(
+    return _db
+        .into(_db.routineExercises)
+        .insert(
           drift.RoutineExercisesCompanion.insert(
             id: id,
             routineId: routineId,
@@ -72,8 +86,9 @@ class RoutineExerciseLocalSource {
     String? targetReps,
     String? timerTarget,
   }) {
-    return (_db.update(_db.routineExercises)..where((row) => row.id.equals(id)))
-        .write(
+    return (_db.update(
+      _db.routineExercises,
+    )..where((row) => row.id.equals(id) & row.isDeleted.equals(false))).write(
       drift.RoutineExercisesCompanion(
         title: Value(title),
         type: Value(type),
@@ -85,25 +100,12 @@ class RoutineExerciseLocalSource {
   }
 
   Future<void> deleteRoutineExerciseById(String id) {
-    return (_db.delete(_db.routineExercises)..where((row) => row.id.equals(id)))
-        .go();
+    return SoftDeleteWriter.routineExercise(_db, id);
   }
 
   Future<void> deleteRoutineExerciseWithLogs(String routineExerciseId) {
-    return _db.transaction(() async {
-      final logs = await (_db.select(_db.workoutLogs)
-            ..where((log) => log.exerciseId.equals(routineExerciseId)))
-          .get();
-
-      for (final log in logs) {
-        await (_db.delete(_db.setEntries)
-              ..where((setEntry) => setEntry.workoutLogId.equals(log.id)))
-            .go();
-        await (_db.delete(_db.workoutLogs)..where((row) => row.id.equals(log.id)))
-            .go();
-      }
-
-      await deleteRoutineExerciseById(routineExerciseId);
-    });
+    return _db.transaction(
+      () => SoftDeleteWriter.routineExerciseWithLogs(_db, routineExerciseId),
+    );
   }
 }

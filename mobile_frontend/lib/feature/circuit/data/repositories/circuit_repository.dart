@@ -15,15 +15,15 @@ class CircuitRepository {
 
   final CircuitLocalSource _local;
 
-  Circuit _fromRow(drift.Circuit row) {
+  Circuit _circuitFromDrift(drift.Circuit driftCircuit) {
     return Circuit(
-      id: row.id,
-      title: row.title,
-      order: row.order,
-      rest: row.rest,
-      rounds: row.rounds,
-      countdown: row.countdown,
-      stationDuration: row.stationDuration,
+      id: driftCircuit.id,
+      title: driftCircuit.title,
+      order: driftCircuit.order,
+      rest: driftCircuit.rest,
+      rounds: driftCircuit.rounds,
+      countdown: driftCircuit.countdown,
+      stationDuration: driftCircuit.stationDuration,
     );
   }
 
@@ -42,7 +42,7 @@ class CircuitRepository {
 
   Stream<List<Circuit>> watchCircuits() {
     return _local.watchCircuits().map(
-          (rows) => rows.map(_fromRow).toList(),
+          (driftCircuits) => driftCircuits.map(_circuitFromDrift).toList(),
         );
   }
 
