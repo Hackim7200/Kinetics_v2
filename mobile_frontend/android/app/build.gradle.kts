@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.hackim.kinetics.mobile_frontend"
+    namespace = "com.hackim.kinetics"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -15,7 +15,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.hackim.kinetics.mobile_frontend"
+        applicationId = "com.hackim.kinetics"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

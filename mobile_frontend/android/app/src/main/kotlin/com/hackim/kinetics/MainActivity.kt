@@ -1,4 +1,4 @@
-package com.hackim.kinetics.mobile_frontend
+package com.hackim.kinetics
 
 import io.flutter.embedding.android.FlutterActivity
 
