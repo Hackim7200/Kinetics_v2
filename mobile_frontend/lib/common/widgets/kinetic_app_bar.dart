@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+// import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class KineticAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -53,7 +53,8 @@ class KineticAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ),
                       )
                     else
-                      Icon(Icons.menu, color: cs.onSurface),
+                      // Icon(Icons.menu, color: cs.onSurface), // TODO: Add menu feature
+                      SizedBox(width: 24),
                     Text(
                       title,
                       style: GoogleFonts.inter(
@@ -66,19 +67,20 @@ class KineticAppBar extends StatelessWidget implements PreferredSizeWidget {
                     if (actions != null)
                       Row(children: actions!)
                     else
-                      InkWell(
-                        onTap: onProfileTap ?? () => context.push('/sign-in'),
-                        customBorder: const CircleBorder(),
-                        child: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: cs.surfaceContainerHighest,
-                          child: Icon(
-                            Icons.person,
-                            size: 18,
-                            color: cs.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
+                      // InkWell(
+                      //   onTap: onProfileTap ?? () => context.push('/sign-in'),
+                      //   customBorder: const CircleBorder(),
+                      //   child: CircleAvatar(
+                      //     radius: 16,
+                      //     backgroundColor: cs.surfaceContainerHighest,
+                      //     child: Icon(
+                      //       Icons.person,
+                      //       size: 18,
+                      //       color: cs.onSurfaceVariant,
+                      //     ),
+                      //   ),
+                      // ),
+                      SizedBox(width: 24),
                   ],
                 ),
               ),

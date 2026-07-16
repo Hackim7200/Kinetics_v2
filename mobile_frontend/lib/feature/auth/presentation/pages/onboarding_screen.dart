@@ -47,10 +47,10 @@ class OnboardingScreen extends ConsumerWidget {
                 child: const Text('Start Now'),
               ),
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: () => context.push('/sign-in'),
-                child: const Text('Sign In'),
-              ),
+              // TextButton( // TODO: Add sign in feature when it's implemented
+              //   onPressed: () => context.push('/sign-in'),
+              //   child: const Text('Sign In'),
+              // ),
             ],
           ),
         ),
