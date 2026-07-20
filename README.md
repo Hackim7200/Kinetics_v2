@@ -1,45 +1,7 @@
-# Kinetics
+# Introduction
 
-A fitness tracking app for building routines, logging workouts, and tracking progress over time. Currently a local-first mobile app with optional sign-in planned for future sync.
+Kinetics is a fitness application built to help people track their workouts day to day. Designed offline-first with poor gym connectivity in mind, Kinetics lets you log workouts without an internet connection and automatically syncs them once connectivity is restored. Workouts sync seamlessly across multiple phones and the web app, with a future goal of making personal training accessible to everyone. The app provides intuitive analytics that help you track steady progress and flag regression so you always know where you stand.
 
-## Project structure
 
-| Directory | Description |
-|-----------|-------------|
-| `mobile_frontend/` | Flutter app (iOS & Android) |
-| `terraform/` | Infrastructure as code (planned) |
-
-## Features
-
-- **Routines** — Create routines and add strength or timer-based exercises
-- **Workout logging** — Log sets during strength and timer sessions
-- **Analytics** — Progress graphs, history tables, and training load metrics
-- **Circuits** — Build and run timed circuit workouts
-- **Local storage** — All data stored on-device with SQLite (Drift)
-
-## Getting started
-
-### Prerequisites
-
-- [Flutter SDK](https://docs.flutter.dev/get-started/install) (Dart ^3.10)
-- Xcode (iOS) or Android Studio (Android)
-
-### Run the app
-
-```bash
-cd mobile_frontend
-flutter pub get
-dart run build_runner build
-flutter run
-```
-
-## Tech stack
-
-- **Flutter** — UI framework
-- **Riverpod** — State management
-- **Drift** — Local SQLite database
-- **go_router** — Navigation
-
-## License
-
-Private — not published.
+# How it works
+The application application implements the following sync engine architecture with the conflict resolution being last write wins every time user makes changes to their workouts adds or updates it it gets added to the sync queue which keeps track of the updates that need to be pushed to the server. Every interval e.g. 5min sync queue pushes changes in bulk to the server to update the changes. if it synces successfully syncs the queue is emptied and the cycle repeats itself bulk is necessary to reduce the cost of hitting the api endpoint every time changes are added that stacks up the costs
