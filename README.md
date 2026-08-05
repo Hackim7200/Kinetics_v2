@@ -5,3 +5,5 @@ Kinetics is a fitness application built to help people track their workouts day 
 
 # How it works
 The application application implements the following sync engine architecture with the conflict resolution being last write wins every time user makes changes to their workouts adds or updates it it gets added to the sync queue which keeps track of the updates that need to be pushed to the server. Every interval e.g. 5min sync queue pushes changes in bulk to the server to update the changes. if it synces successfully syncs the queue is emptied and the cycle repeats itself bulk is necessary to reduce the cost of hitting the api endpoint every time changes are added that stacks up the costs
+
+/
