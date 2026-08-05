@@ -1,6 +1,8 @@
 # Introduction
 
-<img src="mobile_frontend/assets/arm_and_bolt.png" alt="Arm and bolt" width="300">
+<p align="center">
+  <img src="mobile_frontend/assets/arm_and_bolt.png" alt="Arm and bolt" width="300">
+</p>
 
 Kinetics is a fitness application built to help people track their workouts day to day. Designed offline-first with poor gym connectivity in mind, Kinetics lets you log workouts without an internet connection and automatically syncs them once connectivity is restored. Workouts sync seamlessly across multiple phones and the web app, with a future goal of making personal training accessible to everyone. The app provides intuitive analytics that help you track steady progress and flag regression so you always know where you stand.
 
