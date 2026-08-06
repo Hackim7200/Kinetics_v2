@@ -16,8 +16,3 @@ The application application implements the following sync engine architecture wi
 </p>
 
 
-
-## Contents
-- [Flutter UI and logic](mobile_frontend/README.md)
-- [NextJS UI and logic](web_frontend/README.md)
-- [Infrastructure/backend](terraform/README.md)
